@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(curl:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker exec:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(dir \"C:\\\\Users\\\\gabriel.souza\\\\Desktop\\\\projeto pessoal\\\\LeadSense\\\\services\")",
+      "Bash(dir:*)"
+    ]
+  }
+}
