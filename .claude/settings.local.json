@@ -5,7 +5,9 @@
       "Bash(npm run build:*)",
       "Bash(xcopy:*)",
       "Bash(docker logs:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(pnpm --filter @cdc-fotus/design-system build:*)",
+      "Bash(pnpm install)"
     ]
   }
 }

@@ -7,15 +7,15 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
-    "./styles": "./dist/styles.css",
+    "./styles": "./src/styles/globals.css",
     "./tokens": {
+      "types": "./dist/tokens.d.ts",
       "import": "./dist/tokens.mjs",
-      "require": "./dist/tokens.js",
-      "types": "./dist/tokens.d.ts"
+      "require": "./dist/tokens.js"
     }
   },
   "scripts": {
