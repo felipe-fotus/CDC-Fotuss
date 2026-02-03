@@ -1,0 +1,39 @@
+{
+  "name": "@cdc-fotus/design-system",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles": "./dist/styles.css",
+    "./tokens": {
+      "import": "./dist/tokens.mjs",
+      "require": "./dist/tokens.js",
+      "types": "./dist/tokens.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsup": "^8.0.0",
+    "typescript": "~5.9.3"
+  }
+}

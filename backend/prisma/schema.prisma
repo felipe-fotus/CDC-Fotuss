@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id        String     @id @default(cuid())
+  nome      String
+  cpfCnpj   String     @unique @map("cpf_cnpj")
+  email     String?
+  telefone  String?
+  endereco  Json?
+  contratos Contrato[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("clientes")
+}
+
+model Contrato {
+  id                 String    @id @default(cuid())
+  clienteId          String    @map("cliente_id")
+  cliente            Cliente   @relation(fields: [clienteId], references: [id])
+  integrador         String
+  integradorCnpj     String    @map("integrador_cnpj")
+  origemContrato     String    @map("origem_contrato")
+  dataContratacao    DateTime  @map("data_contratacao")
+  valorTotal         Decimal   @map("valor_total") @db.Decimal(12, 2)
+  valorEntrada       Decimal   @map("valor_entrada") @db.Decimal(12, 2)
+  quantidadeParcelas Int       @map("quantidade_parcelas")
+  taxaJuros          Decimal   @map("taxa_juros") @db.Decimal(5, 2)
+  status             String
+  parcelas           Parcela[]
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("contratos")
+}
+
+model Parcela {
+  id              String    @id @default(cuid())
+  contratoId      String    @map("contrato_id")
+  contrato        Contrato  @relation(fields: [contratoId], references: [id])
+  numero          Int
+  dataVencimento  DateTime  @map("data_vencimento")
+  dataPagamento   DateTime? @map("data_pagamento")
+  valorOriginal   Decimal   @map("valor_original") @db.Decimal(12, 2)
+  valorAtualizado Decimal   @map("valor_atualizado") @db.Decimal(12, 2)
+  valorPago       Decimal?  @map("valor_pago") @db.Decimal(12, 2)
+  status          String    // 'paga', 'em_atraso', 'a_vencer'
+
+  @@map("parcelas")
+}
