@@ -1,11 +1,32 @@
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const handleRefresh = () => {
     window.location.reload();
   };
+
+  const handleLogout = () => {
+    // Simula logout - em produção, redireciona para login
+    alert('Logout realizado com sucesso');
+    setIsProfileMenuOpen(false);
+  };
+
+  // Fecha menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navStyle: React.CSSProperties = {
     height: 'var(--navbar-height)',
@@ -56,6 +77,40 @@ const Navbar = () => {
     color: 'var(--color-text-secondary)',
     cursor: 'pointer',
     transition: 'all 150ms ease',
+  };
+
+
+  const profileContainerStyle: React.CSSProperties = {
+    position: 'relative',
+  };
+
+  const dropdownStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 'var(--spacing-xs)',
+    backgroundColor: 'var(--color-surface)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-lg)',
+    boxShadow: 'var(--shadow-lg)',
+    minWidth: '160px',
+    overflow: 'hidden',
+    animation: 'fadeIn 150ms ease',
+  };
+
+  const dropdownItemStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-sm)',
+    padding: 'var(--spacing-sm) var(--spacing-md)',
+    fontSize: 'var(--text-sm)',
+    color: 'var(--color-text-primary)',
+    backgroundColor: 'transparent',
+    border: 'none',
+    width: '100%',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease',
   };
 
   return (
@@ -128,6 +183,58 @@ const Navbar = () => {
             </svg>
           )}
         </button>
+
+        {/* Profile Menu */}
+        <div style={profileContainerStyle} ref={profileMenuRef}>
+          <button
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            style={iconButtonStyle}
+            title="Perfil"
+            aria-label="Menu do perfil"
+            aria-expanded={isProfileMenuOpen}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
+              e.currentTarget.style.color = 'var(--color-primary)';
+            }}
+            onMouseLeave={(e) => {
+              if (!isProfileMenuOpen) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--color-text-secondary)';
+              }
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
+
+          {isProfileMenuOpen && (
+            <div style={dropdownStyle}>
+              <div style={{ padding: 'var(--spacing-sm) var(--spacing-md)', borderBottom: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>Usuario</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>usuario@cdcfotus.com</div>
+              </div>
+              <button
+                onClick={handleLogout}
+                style={dropdownItemStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-criticality-critical)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sair
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

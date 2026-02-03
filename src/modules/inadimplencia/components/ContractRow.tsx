@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { Contract } from '../types/contract';
 import { TableRow, TableCell } from '../../../components/ui/Table';
+import Badge from '../../../components/ui/Badge';
 import CriticalityTag from './CriticalityTag';
 import { formatCurrency, formatDate, truncateText } from '../utils/formatters';
 import { getCriticalityLevel, getCriticalityRowStyle } from '../utils/criticality';
@@ -14,6 +15,7 @@ const ContractRow = ({ contract, index }: ContractRowProps) => {
   const navigate = useNavigate();
   const criticalityLevel = getCriticalityLevel(contract.diasAtraso);
   const rowStyle = getCriticalityRowStyle(criticalityLevel);
+  const statusTag = getStatusTag(contract.diasAtraso, contract.valorAtraso);
 
   const handleClick = () => {
     navigate(`/contratos/${contract.id}`);
@@ -58,22 +60,23 @@ const ContractRow = ({ contract, index }: ContractRowProps) => {
         {formatCurrency(contract.valorAtraso)}
       </TableCell>
       <TableCell>
-        <span
-          style={{
-            display: 'inline-block',
-            padding: '0.125rem 0.5rem',
-            backgroundColor: 'var(--color-criticality-critical)',
-            color: 'var(--color-criticality-critical-text)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 'var(--text-xs)',
-            fontWeight: 500,
-          }}
-        >
-          {contract.status}
-        </span>
+        <Badge variant={statusTag.variant}>{statusTag.label}</Badge>
       </TableCell>
     </TableRow>
   );
 };
 
 export default ContractRow;
+
+const getStatusTag = (diasAtraso: number, valorAtraso: number) => {
+  if (diasAtraso >= 180 || valorAtraso >= 50000) {
+    return { label: 'Critico', variant: 'critical' as const };
+  }
+  if (diasAtraso >= 90 || valorAtraso >= 20000) {
+    return { label: 'Alto', variant: 'high' as const };
+  }
+  if (diasAtraso >= 30 || valorAtraso >= 5000) {
+    return { label: 'Medio', variant: 'medium' as const };
+  }
+  return { label: 'Baixo', variant: 'low' as const };
+};

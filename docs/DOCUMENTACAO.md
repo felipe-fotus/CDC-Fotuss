@@ -38,8 +38,9 @@
   - Faixa de atraso (D+30 a D+1080)
   - Origem do contrato
   - Status
-- Botao de toggle estilo ChatGPT/Claude (seta lateral)
+- Botao de toggle apenas com chevron (no proprio container)
 - Botao "Limpar" quando ha filtros ativos
+- Painel permanece aparente durante o scroll
 
 ### 2.4 Indicadores Inline
 - Total de contratos
@@ -52,6 +53,7 @@
 - Linhas clicaveis (navega para detalhe)
 - Indicador visual de criticidade por cor
 - Ordenacao configuravel
+- Status usa tag de criticidade (Baixo/Medio/Alto/Critico) baseada em dias e valor em atraso
 
 ### 2.6 Tela de Detalhe (Layout Split)
 - **Sidebar esquerda** (colapsavel):
@@ -59,6 +61,7 @@
   - Dados do contrato
   - Dados do cliente
   - Integrador
+- Sidebar permanece aparente durante o scroll
 - **Area principal**:
   - Tabela de parcelas
   - Destaque visual para parcelas em atraso
@@ -172,9 +175,10 @@ src/
 
 ### 6.2 Filtros (Sidebar)
 - Largura aberta: 260px
-- Largura fechada: 0px (com botao de toggle visivel)
+- Largura fechada: 48px (chevron visivel no container)
 - Chips para selecao multipla
 - Input para busca textual
+- Comportamento sticky no scroll
 
 ### 6.3 Indicadores
 - Layout horizontal com flex-wrap
@@ -188,9 +192,10 @@ src/
 - Click navega para detalhe
 
 ### 6.5 Detalhe do Contrato
-- Sidebar: 280px (colapsavel)
+- Sidebar: 300px (colapsavel)
 - Secoes compactas com informacoes-chave
 - Tabela de parcelas ocupa area principal
+- Sidebar permanece visivel durante o scroll
 
 ---
 
@@ -226,6 +231,12 @@ interface Contract {
   status: string;
 }
 ```
+
+### Status (Tag de criticidade na tabela)
+- Baixo: dias < 30 **e** valor < 5000
+- Medio: dias >= 30 **ou** valor >= 5000
+- Alto: dias >= 90 **ou** valor >= 20000
+- Critico: dias >= 180 **ou** valor >= 50000
 
 ### ContractDetail (Detalhe)
 ```typescript

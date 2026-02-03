@@ -15,7 +15,6 @@ interface FiltersPanelProps {
   onToggleOpen: () => void;
 }
 
-// Chip component for quick selection
 const Chip = ({
   label,
   isActive,
@@ -73,27 +72,21 @@ const FiltersPanel = ({
 }: FiltersPanelProps) => {
   const [searchInput, setSearchInput] = useState(filters.clientePagante || filters.integrador || '');
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Search in both cliente and integrador
       onUpdateFilter('clientePagante', searchInput);
       onUpdateFilter('integrador', searchInput);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchInput, onUpdateFilter]);
 
-  // Sync input when filters are cleared
   useEffect(() => {
     if (filters.clientePagante === '' && filters.integrador === '' && searchInput !== '') {
       setSearchInput('');
     }
   }, [filters.clientePagante, filters.integrador]);
 
-  // Toggle origem selection
   const toggleOrigem = (origem: string) => {
-    // For simplicity, we'll use the origemContrato as a single select
-    // but allow deselection
     if (filters.origemContrato === origem) {
       onUpdateFilter('origemContrato', '');
     } else {
@@ -101,7 +94,6 @@ const FiltersPanel = ({
     }
   };
 
-  // Toggle status selection
   const toggleStatus = (status: string) => {
     if (filters.status === status) {
       onUpdateFilter('status', '');
@@ -111,19 +103,50 @@ const FiltersPanel = ({
   };
 
   const panelStyle: React.CSSProperties = {
-    width: isOpen ? '260px' : '0px',
-    minWidth: isOpen ? '260px' : '0px',
+    position: 'sticky',
+    top: 0,
+    height: '100vh',
+    width: isOpen ? '260px' : '48px',
     backgroundColor: 'var(--color-surface)',
-    borderRight: isOpen ? '1px solid var(--color-border)' : 'none',
+    borderRight: '1px solid var(--color-border)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    transition: 'all 200ms ease',
-    position: 'relative',
+    transition: 'width 200ms ease',
+  };
+
+  const headerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: isOpen ? 'space-between' : 'center',
+    padding: isOpen ? 'var(--spacing-md)' : 'var(--spacing-sm)',
+    borderBottom: '1px solid var(--color-border-subtle)',
+    gap: 'var(--spacing-sm)',
+  };
+
+  const headerTitleStyle: React.CSSProperties = {
+    fontSize: 'var(--text-sm)',
+    fontWeight: 600,
+    color: 'var(--color-text-primary)',
+    whiteSpace: 'nowrap',
+  };
+
+  const toggleButtonStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '28px',
+    height: '28px',
+    borderRadius: 'var(--radius-md)',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'var(--color-text-secondary)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, color 150ms ease',
   };
 
   const contentStyle: React.CSSProperties = {
-    padding: isOpen ? 'var(--spacing-md)' : '0',
+    padding: 'var(--spacing-md)',
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--spacing-md)',
@@ -131,15 +154,7 @@ const FiltersPanel = ({
     transition: 'opacity 150ms ease',
     overflowY: 'auto',
     flex: 1,
-  };
-
-  const headerStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 'var(--spacing-sm)',
-    borderBottom: '1px solid var(--color-border-subtle)',
-    marginBottom: 'var(--spacing-sm)',
+    pointerEvents: isOpen ? 'auto' : 'none',
   };
 
   const sectionStyle: React.CSSProperties = {
@@ -162,26 +177,6 @@ const FiltersPanel = ({
     gap: '0.375rem',
   };
 
-  const toggleButtonStyle: React.CSSProperties = {
-    position: 'absolute',
-    right: isOpen ? '-12px' : '-32px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    border: '1px solid var(--color-border)',
-    backgroundColor: 'var(--color-surface)',
-    color: 'var(--color-text-secondary)',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    boxShadow: 'var(--shadow-sm)',
-    transition: 'all 150ms ease',
-  };
-
   const clearButtonStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
     color: 'var(--color-primary)',
@@ -195,117 +190,107 @@ const FiltersPanel = ({
 
   return (
     <aside style={panelStyle}>
-      {/* Toggle button */}
-      <button
-        onClick={onToggleOpen}
-        style={toggleButtonStyle}
-        title={isOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
-        aria-label={isOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
-          e.currentTarget.style.borderColor = 'var(--color-primary)';
-          e.currentTarget.style.color = 'var(--color-primary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-surface)';
-          e.currentTarget.style.borderColor = 'var(--color-border)';
-          e.currentTarget.style.color = 'var(--color-text-secondary)';
-        }}
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)',
-            transition: 'transform 200ms ease',
+      <div style={headerStyle}>
+        {isOpen && <span style={headerTitleStyle}>Filtros</span>}
+        {isOpen && hasActiveFilters && (
+          <button
+            onClick={onClear}
+            style={clearButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            Limpar
+          </button>
+        )}
+        <button
+          onClick={onToggleOpen}
+          style={toggleButtonStyle}
+          title={isOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+          aria-label={isOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
+            e.currentTarget.style.color = 'var(--color-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
           }}
         >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 200ms ease',
+            }}
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+      </div>
 
       <div style={contentStyle}>
-        {/* Header */}
-        <div style={headerStyle}>
-          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-            Filtros
-          </span>
-          {hasActiveFilters && (
-            <button
-              onClick={onClear}
-              style={clearButtonStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              Limpar
-            </button>
-          )}
-        </div>
 
-        {/* Search */}
-        <div style={sectionStyle}>
-          <Input
-            placeholder="Buscar cliente ou integrador..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            style={{ fontSize: 'var(--text-sm)' }}
-          />
-        </div>
-
-        {/* Faixas de Atraso */}
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Faixa de Atraso</label>
-          <div style={chipsContainerStyle}>
-            {FAIXAS_ATRASO.map((faixa) => (
-              <Chip
-                key={faixa}
-                label={`D+${faixa}`}
-                isActive={filters.faixasAtraso.includes(faixa)}
-                onClick={() => onToggleFaixa(faixa)}
-              />
-            ))}
+          <div style={sectionStyle}>
+            <Input
+              placeholder="Buscar cliente ou integrador..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{ fontSize: 'var(--text-sm)' }}
+            />
           </div>
-        </div>
 
-        {/* Origem do Contrato */}
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Origem</label>
-          <div style={chipsContainerStyle}>
-            {uniqueOrigens.map((origem) => (
-              <Chip
-                key={origem}
-                label={origem}
-                isActive={filters.origemContrato === origem}
-                onClick={() => toggleOrigem(origem)}
-              />
-            ))}
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Faixa de Atraso</label>
+            <div style={chipsContainerStyle}>
+              {FAIXAS_ATRASO.map((faixa) => (
+                <Chip
+                  key={faixa}
+                  label={`D+${faixa}`}
+                  isActive={filters.faixasAtraso.includes(faixa)}
+                  onClick={() => onToggleFaixa(faixa)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Status */}
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Status</label>
-          <div style={chipsContainerStyle}>
-            {uniqueStatus.map((status) => (
-              <Chip
-                key={status}
-                label={status}
-                isActive={filters.status === status}
-                onClick={() => toggleStatus(status)}
-              />
-            ))}
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Origem</label>
+            <div style={chipsContainerStyle}>
+              {uniqueOrigens.map((origem) => (
+                <Chip
+                  key={origem}
+                  label={origem}
+                  isActive={filters.origemContrato === origem}
+                  onClick={() => toggleOrigem(origem)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Status</label>
+            <div style={chipsContainerStyle}>
+              {uniqueStatus.map((status) => (
+                <Chip
+                  key={status}
+                  label={status}
+                  isActive={filters.status === status}
+                  onClick={() => toggleStatus(status)}
+                />
+              ))}
+            </div>
+          </div>
       </div>
     </aside>
   );
