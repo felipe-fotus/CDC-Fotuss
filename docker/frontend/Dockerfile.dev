@@ -1,0 +1,30 @@
+# ============================================
+# CDC Fotus - Frontend Dockerfile (Development)
+# ============================================
+
+FROM node:20-alpine
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+WORKDIR /app
+
+# Copy workspace files
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY tsconfig.base.json tsconfig.json ./
+
+# Copy packages and frontend
+COPY packages ./packages
+COPY frontend ./frontend
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile
+
+WORKDIR /app/frontend
+
+ENV NODE_ENV=development
+
+EXPOSE 5173
+
+# Run Vite dev server with host flag for Docker
+CMD ["pnpm", "dev", "--host", "0.0.0.0"]

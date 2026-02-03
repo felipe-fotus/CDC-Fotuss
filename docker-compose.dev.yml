@@ -1,0 +1,89 @@
+# ============================================
+# CDC Fotus - Docker Compose (Development)
+# ============================================
+# Use: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cdc-fotus-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-cdc_fotus}
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cdc-fotus-dev-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cdc-fotus-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - cdc-fotus-dev-network
+
+  # Backend (Development with hot reload)
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile.dev
+    container_name: cdc-fotus-backend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cdc_fotus}
+      REDIS_URL: redis://redis:6379
+      BACKEND_PORT: 3000
+      BACKEND_HOST: 0.0.0.0
+      LOG_LEVEL: debug
+    volumes:
+      - ./backend:/app/backend
+      - ./packages:/app/packages
+      - /app/backend/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cdc-fotus-dev-network
+
+  # Frontend (Development with hot reload)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.dev
+    container_name: cdc-fotus-frontend-dev
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+    volumes:
+      - ./frontend:/app/frontend
+      - ./packages:/app/packages
+      - /app/frontend/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - cdc-fotus-dev-network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  cdc-fotus-dev-network:
+    driver: bridge

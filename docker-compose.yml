@@ -1,0 +1,91 @@
+# ============================================
+# CDC Fotus - Docker Compose (Production)
+# ============================================
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cdc-fotus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-cdc_fotus}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cdc-fotus-network
+
+  # Redis Cache (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: cdc-fotus-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cdc-fotus-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: cdc-fotus-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cdc_fotus}
+      REDIS_URL: redis://redis:6379
+      BACKEND_PORT: 3000
+      BACKEND_HOST: 0.0.0.0
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cdc-fotus-network
+
+  # Frontend (Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    container_name: cdc-fotus-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - cdc-fotus-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  cdc-fotus-network:
+    driver: bridge

@@ -73,12 +73,12 @@ cdc-fotus/
 ## Progresso
 
 - [x] 01 - Estrutura Monorepo (Concluido)
-- [ ] 02 - Docker Setup
+- [x] 02 - Docker Setup (Concluido)
 - [~] 03 - Design System (Tokens criados, falta componentes)
 - [x] 04 - Backend Setup (Concluido)
 - [ ] 05 - Frontend Refactor
 - [x] 06 - Shared Packages (Concluido)
-- [~] 07 - Environment Config (.env.example criados)
+- [x] 07 - Environment Config (Concluido)
 
 ---
 

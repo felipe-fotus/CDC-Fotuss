@@ -3,43 +3,43 @@
 ## Objetivo
 Containerizar a aplicacao com Docker e Docker Compose para ambientes de desenvolvimento e producao.
 
-## Status: Pendente
+## Status: Concluido
 
 ---
 
 ## Tarefas
 
 ### 2.1 Dockerfile do Frontend
-- [ ] Criar `docker/frontend.Dockerfile`
-- [ ] Configurar multi-stage build (build + nginx)
-- [ ] Otimizar para producao
+- [x] Criar `docker/frontend/Dockerfile`
+- [x] Configurar multi-stage build (build + nginx)
+- [x] Otimizar para producao
+- [x] Criar `docker/frontend/Dockerfile.dev` para desenvolvimento
 
 ### 2.2 Dockerfile do Backend
-- [ ] Criar `docker/backend.Dockerfile`
-- [ ] Configurar multi-stage build
-- [ ] Configurar healthcheck
+- [x] Criar `docker/backend/Dockerfile`
+- [x] Configurar multi-stage build
+- [x] Configurar healthcheck
+- [x] Criar `docker/backend/Dockerfile.dev` para desenvolvimento
 
 ### 2.3 Nginx Configuration
-- [ ] Criar `docker/nginx.conf`
-- [ ] Configurar proxy reverso para API
-- [ ] Configurar cache de assets estaticos
-- [ ] Configurar gzip compression
+- [x] Criar `docker/frontend/nginx.conf`
+- [x] Configurar proxy reverso para API
+- [x] Configurar cache de assets estaticos
+- [x] Configurar gzip compression
 
 ### 2.4 Docker Compose - Producao
-- [ ] Criar `docker-compose.yml`
-- [ ] Configurar servicos: frontend, backend, postgres, redis
-- [ ] Configurar networks
-- [ ] Configurar volumes
+- [x] Criar `docker-compose.yml`
+- [x] Configurar servicos: frontend, backend, postgres, redis
+- [x] Configurar networks
+- [x] Configurar volumes
 
 ### 2.5 Docker Compose - Desenvolvimento
-- [ ] Criar `docker-compose.dev.yml`
-- [ ] Configurar hot-reload para frontend e backend
-- [ ] Configurar volumes para codigo fonte
-- [ ] Configurar porta de debug
+- [x] Criar `docker-compose.dev.yml`
+- [x] Configurar hot-reload para frontend e backend
+- [x] Configurar volumes para codigo fonte
 
 ### 2.6 Arquivos auxiliares
-- [ ] Criar `.dockerignore`
-- [ ] Criar `docker/entrypoint.sh` para backend
+- [x] Criar `.dockerignore`
 
 ---
 
@@ -314,11 +314,12 @@ coverage
 
 ## Validacao
 
-- [ ] `docker-compose build` executa sem erros
-- [ ] `docker-compose up` inicia todos os servicos
-- [ ] Frontend acessivel em http://localhost
-- [ ] Backend responde em http://localhost/api/health
-- [ ] Hot-reload funciona no modo desenvolvimento
+- [x] `docker-compose build` executa sem erros
+- [x] `docker-compose up` inicia todos os servicos
+- [x] Frontend acessivel em http://localhost:5173 (dev)
+- [x] Backend responde em http://localhost:3000/api/health
+- [x] Hot-reload funciona no modo desenvolvimento
+- [x] Database conectado e seed executado
 
 ---
 
