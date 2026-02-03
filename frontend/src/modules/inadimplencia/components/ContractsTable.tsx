@@ -1,6 +1,5 @@
 import type { Contract } from '../types/contract';
-import { Table, TableHeader, TableBody, TableRow, TableHead } from '../../../components/ui/Table';
-import EmptyState from '../../../components/ui/EmptyState';
+import { Table, TableHeader, TableBody, TableRow, TableHead, EmptyState } from '@cdc-fotus/design-system';
 import ContractRow from './ContractRow';
 
 interface ContractsTableProps {

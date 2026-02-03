@@ -1,4 +1,4 @@
-import Badge from '../../../components/ui/Badge';
+import { Badge } from '@cdc-fotus/design-system';
 import type { CriticalityLevel } from '../types/contract';
 import { formatDaysOverdue } from '../utils/formatters';
 import { getCriticalityBadgeVariant } from '../utils/criticality';

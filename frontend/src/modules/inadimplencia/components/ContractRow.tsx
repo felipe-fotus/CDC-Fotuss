@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Contract } from '../types/contract';
-import { TableRow, TableCell } from '../../../components/ui/Table';
-import Badge from '../../../components/ui/Badge';
+import { TableRow, TableCell, Badge } from '@cdc-fotus/design-system';
 import CriticalityTag from './CriticalityTag';
 import { formatCurrency, formatDate, truncateText } from '../utils/formatters';
 import { getCriticalityLevel, getCriticalityRowStyle } from '../utils/criticality';

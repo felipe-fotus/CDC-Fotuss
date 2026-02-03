@@ -4,8 +4,7 @@ import type { ContractDetail, Parcela } from '../../inadimplencia/types/contract
 import { fetchContractById } from '../../inadimplencia/services/contractsService';
 import { formatCurrency, formatDate, formatDaysOverdue } from '../../inadimplencia/utils/formatters';
 import { getCriticalityLevel } from '../../inadimplencia/utils/criticality';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
+import { Button, Badge } from '@cdc-fotus/design-system';
 
 // === SIDEBAR CARD ===
 

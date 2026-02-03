@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import Button from '../../../components/ui/Button';
+import { Button } from '@cdc-fotus/design-system';
 
 const ContractDetailPlaceholder = () => {
   const { id } = useParams<{ id: string }>();

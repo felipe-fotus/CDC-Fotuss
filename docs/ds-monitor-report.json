@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-02-03T17:43:30.711Z",
+  "summary": {
+    "totalDSComponents": 28,
+    "usedDSComponents": 0,
+    "coveragePercent": 0,
+    "localComponentsCount": 6,
+    "duplicatesCount": 6
+  },
+  "dsComponents": [],
+  "localComponents": [
+    {
+      "name": "Badge",
+      "path": "src\\components\\ui\\Badge.tsx",
+      "hasDSEquivalent": true,
+      "dsEquivalent": "Badge"
+    },
+    {
+      "name": "Button",
+      "path": "src\\components\\ui\\Button.tsx",
+      "hasDSEquivalent": true,
+      "dsEquivalent": "Button"
+    },
+    {
+      "name": "EmptyState",
+      "path": "src\\components\\ui\\EmptyState.tsx",
+      "hasDSEquivalent": true,
+      "dsEquivalent": "EmptyState"
+    },
+    {
+      "name": "Input",
+      "path": "src\\components\\ui\\Input.tsx",
+      "hasDSEquivalent": true,
+      "dsEquivalent": "Input"
+    },
+    {
+      "name": "Select",
+      "path": "src\\components\\ui\\Select.tsx",
+      "hasDSEquivalent": true,
+      "dsEquivalent": "Select"
+    },
+    {
+      "name": "Table",
+      "path": "src\\components\\ui\\Table.tsx",
+      "hasDSEquivalent": true,
+      "dsEquivalent": "Table"
+    }
+  ],
+  "duplicates": [
+    {
+      "localPath": "src\\components\\ui\\Badge.tsx",
+      "dsComponent": "Badge",
+      "recommendation": "Substituir por: import { Badge } from '@cdc-fotus/design-system'"
+    },
+    {
+      "localPath": "src\\components\\ui\\Button.tsx",
+      "dsComponent": "Button",
+      "recommendation": "Substituir por: import { Button } from '@cdc-fotus/design-system'"
+    },
+    {
+      "localPath": "src\\components\\ui\\EmptyState.tsx",
+      "dsComponent": "EmptyState",
+      "recommendation": "Substituir por: import { EmptyState } from '@cdc-fotus/design-system'"
+    },
+    {
+      "localPath": "src\\components\\ui\\Input.tsx",
+      "dsComponent": "Input",
+      "recommendation": "Substituir por: import { Input } from '@cdc-fotus/design-system'"
+    },
+    {
+      "localPath": "src\\components\\ui\\Select.tsx",
+      "dsComponent": "Select",
+      "recommendation": "Substituir por: import { Select } from '@cdc-fotus/design-system'"
+    },
+    {
+      "localPath": "src\\components\\ui\\Table.tsx",
+      "dsComponent": "Table",
+      "recommendation": "Substituir por: import { Table } from '@cdc-fotus/design-system'"
+    }
+  ],
+  "unusedDSComponents": [
+    "Button",
+    "Input",
+    "Select",
+    "Badge",
+    "Card",
+    "CardHeader",
+    "CardBody",
+    "CardFooter",
+    "Modal",
+    "ModalFooter",
+    "Tooltip",
+    "Skeleton",
+    "Spinner",
+    "LoadingOverlay",
+    "Table",
+    "TableHeader",
+    "TableBody",
+    "TableRow",
+    "TableHead",
+    "TableCell",
+    "EmptyState",
+    "Container",
+    "Stack",
+    "HStack",
+    "VStack",
+    "Grid",
+    "Divider",
+    "Spacer"
+  ]
+}

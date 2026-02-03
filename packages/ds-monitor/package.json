@@ -1,0 +1,27 @@
+{
+  "name": "@cdc-fotus/ds-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ds-monitor": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format esm --dts",
+    "dev": "tsup src/cli.ts src/index.ts --format esm --dts --watch",
+    "monitor": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.0",
+    "picocolors": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "~5.9.3"
+  }
+}

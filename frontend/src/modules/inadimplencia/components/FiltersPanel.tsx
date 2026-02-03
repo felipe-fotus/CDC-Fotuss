@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Input from '../../../components/ui/Input';
+import { Input } from '@cdc-fotus/design-system';
 import type { ContractFilters } from '../types/contract';
 import { FAIXAS_ATRASO } from '../services/contractsService';
 

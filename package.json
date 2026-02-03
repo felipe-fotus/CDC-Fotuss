@@ -16,7 +16,10 @@
     "docker:dev": "docker-compose -f docker-compose.dev.yml up",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "ds:monitor": "pnpm --filter @cdc-fotus/ds-monitor monitor",
+    "ds:monitor:save": "pnpm --filter @cdc-fotus/ds-monitor monitor save",
+    "ds:monitor:check": "pnpm --filter @cdc-fotus/ds-monitor monitor check"
   },
   "devDependencies": {
     "typescript": "~5.9.3"
