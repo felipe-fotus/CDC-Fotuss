@@ -4,10 +4,10 @@ interface SortControlProps {
 }
 
 const sortOptions = [
-  { value: 'diasAtraso-desc', label: 'Maior D+' },
-  { value: 'diasAtraso-asc', label: 'Menor D+' },
-  { value: 'valorAtraso-desc', label: 'Maior valor' },
-  { value: 'valorAtraso-asc', label: 'Menor valor' },
+  { value: 'diasAtraso-desc', label: 'Maior atraso' },
+  { value: 'diasAtraso-asc', label: 'Menor atraso' },
+  { value: 'saldoDevedor-desc', label: 'Maior saldo' },
+  { value: 'saldoDevedor-asc', label: 'Menor saldo' },
   { value: 'dataVencimento-asc', label: 'Mais antigo' },
   { value: 'dataVencimento-desc', label: 'Mais recente' },
 ];

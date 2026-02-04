@@ -1,4 +1,4 @@
-import type { Contract, ContractDetail, Cliente, Parcela, ParcelaStatus, InadimplenciaMetrics } from '../types/contract';
+import type { Contract, ContractDetail, Cliente, Parcela, ParcelaStatus, InadimplenciaMetrics, Anotacao } from '../types/contract';
 import { generateDueDateFromDaysOverdue } from '../../../lib/dates';
 
 // === DADOS DE MOCK ===
@@ -246,13 +246,35 @@ function generateContractDetail(index: number): ContractDetail {
 // === CACHE E API PÚBLICA ===
 
 let mockContractsDetailCache: ContractDetail[] | null = null;
+const mockAnotacoesCache: Map<string, Anotacao[]> = new Map();
+const mockTratadoCache: Map<string, boolean> = new Map();
 
 function getMockContractsDetail(): ContractDetail[] {
   if (!mockContractsDetailCache) {
     const numberOfContracts = getRandomInRange(100, 120);
     mockContractsDetailCache = [];
     for (let i = 0; i < numberOfContracts; i++) {
-      mockContractsDetailCache.push(generateContractDetail(i));
+      const contract = generateContractDetail(i);
+      mockContractsDetailCache.push(contract);
+
+      // Inicializa alguns contratos como já tratados (20%)
+      if (Math.random() < 0.2) {
+        mockTratadoCache.set(contract.id, true);
+        // Adiciona uma anotação inicial para os tratados
+        mockAnotacoesCache.set(contract.id, [{
+          id: `ANO-${contract.id}-001`,
+          contratoId: contract.id,
+          texto: getRandomFromArray([
+            'Cliente informou que irá regularizar na próxima semana.',
+            'Acordo de parcelamento em negociação.',
+            'Cliente não atendeu, deixar recado.',
+            'Promessa de pagamento para dia 15.',
+            'Enviado boleto atualizado por e-mail.',
+          ]),
+          autor: getRandomFromArray(['Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa']),
+          createdAt: new Date(Date.now() - getRandomInRange(1, 30) * 24 * 60 * 60 * 1000).toISOString(),
+        }]);
+      }
     }
   }
   return mockContractsDetailCache;
@@ -260,15 +282,18 @@ function getMockContractsDetail(): ContractDetail[] {
 
 // Converte ContractDetail para Contract (listagem simplificada)
 function toContract(detail: ContractDetail): Contract {
+  const anotacoes = mockAnotacoesCache.get(detail.id) || [];
   return {
     id: detail.id,
     clientePagante: detail.cliente.nome,
+    clienteCpfCnpj: detail.cliente.cpfCnpj,
     integrador: detail.integrador,
-    origemContrato: detail.origemContrato,
+    integradorCpfCnpj: detail.integradorCnpj,
     dataVencimento: detail.dataVencimentoMaisAntigo,
     diasAtraso: detail.diasAtrasoMaisAntigo,
-    valorAtraso: detail.valorTotalAtraso,
-    status: detail.status,
+    saldoDevedor: detail.valorTotalAtraso,
+    tratado: mockTratadoCache.get(detail.id) || false,
+    quantidadeAnotacoes: anotacoes.length,
   };
 }
 
@@ -286,34 +311,46 @@ export async function fetchContractById(id: string): Promise<ContractDetail | nu
 
 export function calculateMetrics(contracts: Contract[]): InadimplenciaMetrics {
   const totalContratos = contracts.length;
-  const valorTotalAtraso = contracts.reduce((acc, c) => acc + c.valorAtraso, 0);
-  const mediaAtraso = totalContratos > 0
-    ? Math.round(contracts.reduce((acc, c) => acc + c.diasAtraso, 0) / totalContratos)
-    : 0;
-  const situacoesCriticas = contracts.filter(c => c.diasAtraso >= 180).length;
+  const saldoDevedorTotal = contracts.reduce((acc, c) => acc + c.saldoDevedor, 0);
 
   return {
     totalContratos,
-    valorTotalAtraso,
-    mediaAtraso,
-    situacoesCriticas,
+    saldoDevedorTotal,
   };
 }
 
-export function getUniqueClientes(contracts: Contract[]): string[] {
-  return [...new Set(contracts.map((c) => c.clientePagante))].sort();
-}
-
-export function getUniqueIntegradores(contracts: Contract[]): string[] {
-  return [...new Set(contracts.map((c) => c.integrador))].sort();
-}
-
-export function getUniqueOrigens(contracts: Contract[]): string[] {
-  return [...new Set(contracts.map((c) => c.origemContrato))].sort();
-}
-
-export function getUniqueStatus(contracts: Contract[]): string[] {
-  return [...new Set(contracts.map((c) => c.status))].sort();
-}
-
 export const FAIXAS_ATRASO = [30, 60, 90, 120, 150, 180, 360, 540, 720, 900, 1080];
+
+// === FUNÇÕES DE ANOTAÇÕES E TRATAMENTO ===
+
+export async function fetchAnotacoes(contratoId: string): Promise<Anotacao[]> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return mockAnotacoesCache.get(contratoId) || [];
+}
+
+export async function addAnotacao(contratoId: string, texto: string, autor: string): Promise<Anotacao> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const anotacoes = mockAnotacoesCache.get(contratoId) || [];
+  const novaAnotacao: Anotacao = {
+    id: `ANO-${contratoId}-${String(anotacoes.length + 1).padStart(3, '0')}`,
+    contratoId,
+    texto,
+    autor,
+    createdAt: new Date().toISOString(),
+  };
+
+  anotacoes.unshift(novaAnotacao); // Adiciona no início
+  mockAnotacoesCache.set(contratoId, anotacoes);
+
+  return novaAnotacao;
+}
+
+export async function marcarComoTratado(contratoId: string, tratado: boolean): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  mockTratadoCache.set(contratoId, tratado);
+}
+
+export function getStatusTratamento(contratoId: string): boolean {
+  return mockTratadoCache.get(contratoId) || false;
+}

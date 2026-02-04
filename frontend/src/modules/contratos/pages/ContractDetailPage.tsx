@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ContractDetail, Parcela } from '../../inadimplencia/types/contract';
-import { fetchContractById } from '../../inadimplencia/services/contractsService';
+import { fetchContractById, fetchAnotacoes, getStatusTratamento } from '../../inadimplencia/services/contractsService';
 import { formatCurrency, formatDate, formatDaysOverdue } from '../../inadimplencia/utils/formatters';
 import { getCriticalityLevel } from '../../inadimplencia/utils/criticality';
 import { Button, Badge } from '@cdc-fotus/design-system';
+import AnotacoesModal from '../../inadimplencia/components/AnotacoesModal';
 
 // === SIDEBAR CARD ===
 
@@ -105,10 +106,12 @@ const ParcelaRow = ({ parcela }: { parcela: Parcela }) => {
 
   const colors = statusColors[parcela.status];
   const isOverdue = parcela.status === 'em_atraso';
+  const isPaid = parcela.status === 'paga';
 
   const rowStyle: React.CSSProperties = {
     backgroundColor: isOverdue ? 'var(--color-criticality-critical)' : 'transparent',
     borderLeft: isOverdue ? '3px solid var(--color-criticality-critical-border)' : '3px solid transparent',
+    opacity: isPaid ? 0.6 : 1,
   };
 
   const cellStyle: React.CSSProperties = {
@@ -204,6 +207,9 @@ const ContractDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [anotacoesCount, setAnotacoesCount] = useState(0);
+  const [tratado, setTratado] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -216,6 +222,10 @@ const ContractDetailPage = () => {
         if (isMounted) {
           if (data) {
             setContract(data);
+            // Carregar info de anotações
+            const anotacoes = await fetchAnotacoes(id);
+            setAnotacoesCount(anotacoes.length);
+            setTratado(getStatusTratamento(id));
           } else {
             setError('Contrato nao encontrado');
           }
@@ -239,6 +249,13 @@ const ContractDetailPage = () => {
 
   const handleBack = () => navigate('/inadimplencia');
 
+  const handleModalUpdate = async () => {
+    if (!id) return;
+    const anotacoes = await fetchAnotacoes(id);
+    setAnotacoesCount(anotacoes.length);
+    setTratado(getStatusTratamento(id));
+  };
+
   const pageStyle: React.CSSProperties = {
     display: 'flex',
     flex: 1,
@@ -251,8 +268,18 @@ const ContractDetailPage = () => {
 
   const criticalityLevel = getCriticalityLevel(contract.diasAtrasoMaisAntigo);
   const criticalityVariant = criticalityLevel as 'low' | 'medium' | 'high' | 'critical';
-  const todasParcelas = contract.parcelas;
+
+  // Ordenar parcelas: em_atraso primeiro, depois a_vencer, depois paga
+  const statusOrder = { em_atraso: 0, a_vencer: 1, paga: 2 };
+  const sortedParcelas = [...contract.parcelas].sort((a, b) => {
+    const orderDiff = statusOrder[a.status] - statusOrder[b.status];
+    if (orderDiff !== 0) return orderDiff;
+    // Dentro do mesmo status, ordenar por data de vencimento
+    return new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime();
+  });
+
   const parcelasEmAtraso = contract.parcelas.filter((p) => p.status === 'em_atraso');
+  const parcelasAVencer = contract.parcelas.filter((p) => p.status === 'a_vencer');
 
   const containerStyle: React.CSSProperties = {
     position: 'relative',
@@ -354,6 +381,39 @@ const ContractDetailPage = () => {
     alignItems: 'center',
   };
 
+  const actionsStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-sm)',
+  };
+
+  const anotacoesButtonStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.375rem',
+    padding: '0.375rem 0.75rem',
+    fontSize: 'var(--text-xs)',
+    fontWeight: 500,
+    backgroundColor: anotacoesCount > 0 ? 'var(--color-primary-subtle)' : 'var(--color-surface-elevated)',
+    color: anotacoesCount > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-md)',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  };
+
+  const statusBadgeStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: '0.25rem 0.5rem',
+    fontSize: '11px',
+    fontWeight: 500,
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: tratado ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+    color: tratado ? '#10b981' : '#f59e0b',
+  };
+
   return (
     <div style={pageStyle}>
       <div style={containerStyle}>
@@ -397,8 +457,8 @@ const ContractDetailPage = () => {
           <div style={sidebarContentStyle}>
             {/* Resumo do Atraso */}
             <SidebarCard title="Resumo do Atraso" variant="danger">
-              <InfoItem label="Atraso Atual" value={formatDaysOverdue(contract.diasAtrasoMaisAntigo)} mono highlight />
-              <InfoItem label="Valor em Atraso" value={formatCurrency(contract.valorTotalAtraso)} mono highlight />
+              <InfoItem label="Dias em Atraso" value={contract.diasAtrasoMaisAntigo} mono highlight />
+              <InfoItem label="Saldo Devedor" value={formatCurrency(contract.valorTotalAtraso)} mono highlight />
               <InfoItem label="Parcelas em Atraso" value={contract.parcelasEmAtraso} mono />
               <InfoItem label="Venc. Mais Antigo" value={formatDate(contract.dataVencimentoMaisAntigo)} />
             </SidebarCard>
@@ -450,6 +510,18 @@ const ContractDetailPage = () => {
               <Badge variant={criticalityVariant} style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                 {formatDaysOverdue(contract.diasAtrasoMaisAntigo)}
               </Badge>
+              <span style={statusBadgeStyle}>
+                {tratado ? (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                )}
+                {tratado ? 'Tratado' : 'Pendente'}
+              </span>
               <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
                 {contract.cliente.nome}
               </span>
@@ -463,9 +535,44 @@ const ContractDetailPage = () => {
                 <h2 style={{ fontSize: 'var(--text-sm)', fontWeight: 600, margin: 0, color: 'var(--color-text-primary)' }}>
                   Parcelas do Contrato
                 </h2>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                  {parcelasEmAtraso.length} em atraso de {todasParcelas.length} parcelas
-                </span>
+                <div style={actionsStyle}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                    {parcelasEmAtraso.length} em atraso, {parcelasAVencer.length} a vencer
+                  </span>
+                  <button
+                    type="button"
+                    style={anotacoesButtonStyle}
+                    onClick={() => setIsModalOpen(true)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--color-primary)';
+                      e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
+                      e.currentTarget.style.color = 'var(--color-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--color-border)';
+                      e.currentTarget.style.backgroundColor = anotacoesCount > 0 ? 'var(--color-primary-subtle)' : 'var(--color-surface-elevated)';
+                      e.currentTarget.style.color = anotacoesCount > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)';
+                    }}
+                    title="Anotacoes do contrato"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Anotacoes
+                    {anotacoesCount > 0 && (
+                      <span style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'white',
+                        padding: '0.125rem 0.375rem',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                      }}>
+                        {anotacoesCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div style={{ overflowX: 'auto' }}>
@@ -482,7 +589,7 @@ const ContractDetailPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {todasParcelas.map((parcela) => (
+                    {sortedParcelas.map((parcela) => (
                       <ParcelaRow key={parcela.numero} parcela={parcela} />
                     ))}
                   </tbody>
@@ -492,6 +599,16 @@ const ContractDetailPage = () => {
           </div>
         </main>
       </div>
+
+      {/* Modal de Anotacoes */}
+      <AnotacoesModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        contratoId={contract.id}
+        clienteNome={contract.cliente.nome}
+        tratado={tratado}
+        onUpdate={handleModalUpdate}
+      />
     </div>
   );
 };

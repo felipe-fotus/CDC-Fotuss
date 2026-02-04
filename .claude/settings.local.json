@@ -9,7 +9,12 @@
       "Bash(pnpm --filter @cdc-fotus/design-system build:*)",
       "Bash(pnpm install)",
       "Bash(pnpm ds:monitor:*)",
-      "Bash(pnpm ds:monitor:save:*)"
+      "Bash(pnpm ds:monitor:save:*)",
+      "Bash(pnpm --filter @cdc-fotus/frontend exec tsc --noEmit)",
+      "Bash(pnpm --filter @cdc-fotus/backend exec tsc:*)",
+      "Bash(docker-compose:*)",
+      "Bash(dir:*)",
+      "Bash(docker restart:*)"
     ]
   }
 }

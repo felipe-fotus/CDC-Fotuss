@@ -61,34 +61,45 @@ export interface ContractDetail {
 export interface Contract {
   id: string;
   clientePagante: string;
+  clienteCpfCnpj: string;
   integrador: string;
-  origemContrato: string;
-  dataVencimento: string;
+  integradorCpfCnpj: string;
+  dataVencimento: string; // Data da parcela mais antiga inadimplente
   diasAtraso: number;
-  valorAtraso: number;
-  status: string;
+  saldoDevedor: number;
+  tratado: boolean;
+  quantidadeAnotacoes: number;
+}
+
+// === ANOTAÇÕES ===
+
+export interface Anotacao {
+  id: string;
+  contratoId: string;
+  texto: string;
+  autor: string;
+  createdAt: string;
 }
 
 // === INDICADORES / METRICAS ===
 
 export interface InadimplenciaMetrics {
   totalContratos: number;
-  valorTotalAtraso: number;
-  mediaAtraso: number;
-  situacoesCriticas: number; // D+180 ou mais
+  saldoDevedorTotal: number;
 }
 
 // === FILTROS E ORDENACAO ===
 
-export type ContractSortField = 'diasAtraso' | 'valorAtraso' | 'dataVencimento';
+export type ContractSortField = 'diasAtraso' | 'saldoDevedor' | 'dataVencimento';
 export type SortDirection = 'asc' | 'desc';
 
 export interface ContractFilters {
   faixasAtraso: number[];
-  clientePagante: string;
-  integrador: string;
-  status: string;
-  origemContrato: string;
+  clienteNome: string;
+  clienteCpfCnpj: string;
+  integradorNome: string;
+  integradorCpfCnpj: string;
+  statusTratamento: 'todos' | 'tratados' | 'pendentes';
 }
 
 export interface ContractSorting {

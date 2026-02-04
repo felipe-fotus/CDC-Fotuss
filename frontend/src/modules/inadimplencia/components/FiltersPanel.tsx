@@ -9,8 +9,6 @@ interface FiltersPanelProps {
   onToggleFaixa: (faixa: number) => void;
   onClear: () => void;
   hasActiveFilters: boolean;
-  uniqueOrigens: string[];
-  uniqueStatus: string[];
   isOpen: boolean;
   onToggleOpen: () => void;
 }
@@ -65,42 +63,48 @@ const FiltersPanel = ({
   onToggleFaixa,
   onClear,
   hasActiveFilters,
-  uniqueOrigens,
-  uniqueStatus,
   isOpen,
   onToggleOpen,
 }: FiltersPanelProps) => {
-  const [searchInput, setSearchInput] = useState(filters.clientePagante || filters.integrador || '');
+  const [clienteNome, setClienteNome] = useState(filters.clienteNome || '');
+  const [clienteCpfCnpj, setClienteCpfCnpj] = useState(filters.clienteCpfCnpj || '');
+  const [integradorNome, setIntegradorNome] = useState(filters.integradorNome || '');
+  const [integradorCpfCnpj, setIntegradorCpfCnpj] = useState(filters.integradorCpfCnpj || '');
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      onUpdateFilter('clientePagante', searchInput);
-      onUpdateFilter('integrador', searchInput);
+      onUpdateFilter('clienteNome', clienteNome);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchInput, onUpdateFilter]);
+  }, [clienteNome, onUpdateFilter]);
 
   useEffect(() => {
-    if (filters.clientePagante === '' && filters.integrador === '' && searchInput !== '') {
-      setSearchInput('');
-    }
-  }, [filters.clientePagante, filters.integrador]);
+    const timer = setTimeout(() => {
+      onUpdateFilter('clienteCpfCnpj', clienteCpfCnpj);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clienteCpfCnpj, onUpdateFilter]);
 
-  const toggleOrigem = (origem: string) => {
-    if (filters.origemContrato === origem) {
-      onUpdateFilter('origemContrato', '');
-    } else {
-      onUpdateFilter('origemContrato', origem);
-    }
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onUpdateFilter('integradorNome', integradorNome);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [integradorNome, onUpdateFilter]);
 
-  const toggleStatus = (status: string) => {
-    if (filters.status === status) {
-      onUpdateFilter('status', '');
-    } else {
-      onUpdateFilter('status', status);
-    }
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onUpdateFilter('integradorCpfCnpj', integradorCpfCnpj);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [integradorCpfCnpj, onUpdateFilter]);
+
+  useEffect(() => {
+    if (!filters.clienteNome && clienteNome) setClienteNome('');
+    if (!filters.clienteCpfCnpj && clienteCpfCnpj) setClienteCpfCnpj('');
+    if (!filters.integradorNome && integradorNome) setIntegradorNome('');
+    if (!filters.integradorCpfCnpj && integradorCpfCnpj) setIntegradorCpfCnpj('');
+  }, [filters.clienteNome, filters.clienteCpfCnpj, filters.integradorNome, filters.integradorCpfCnpj]);
 
   const panelStyle: React.CSSProperties = {
     position: 'sticky',
@@ -240,13 +244,35 @@ const FiltersPanel = ({
       </div>
 
       <div style={contentStyle}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Cliente</label>
+            <Input
+              placeholder="Nome do cliente..."
+              value={clienteNome}
+              onChange={(e) => setClienteNome(e.target.value)}
+              style={{ fontSize: 'var(--text-sm)' }}
+            />
+            <Input
+              placeholder="CPF/CNPJ do cliente..."
+              value={clienteCpfCnpj}
+              onChange={(e) => setClienteCpfCnpj(e.target.value)}
+              style={{ fontSize: 'var(--text-sm)', marginTop: '0.5rem' }}
+            />
+          </div>
 
           <div style={sectionStyle}>
+            <label style={labelStyle}>Integrador</label>
             <Input
-              placeholder="Buscar cliente ou integrador..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Nome do integrador..."
+              value={integradorNome}
+              onChange={(e) => setIntegradorNome(e.target.value)}
               style={{ fontSize: 'var(--text-sm)' }}
+            />
+            <Input
+              placeholder="CPF/CNPJ do integrador..."
+              value={integradorCpfCnpj}
+              onChange={(e) => setIntegradorCpfCnpj(e.target.value)}
+              style={{ fontSize: 'var(--text-sm)', marginTop: '0.5rem' }}
             />
           </div>
 
@@ -259,34 +285,6 @@ const FiltersPanel = ({
                   label={`D+${faixa}`}
                   isActive={filters.faixasAtraso.includes(faixa)}
                   onClick={() => onToggleFaixa(faixa)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div style={sectionStyle}>
-            <label style={labelStyle}>Origem</label>
-            <div style={chipsContainerStyle}>
-              {uniqueOrigens.map((origem) => (
-                <Chip
-                  key={origem}
-                  label={origem}
-                  isActive={filters.origemContrato === origem}
-                  onClick={() => toggleOrigem(origem)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div style={sectionStyle}>
-            <label style={labelStyle}>Status</label>
-            <div style={chipsContainerStyle}>
-              {uniqueStatus.map((status) => (
-                <Chip
-                  key={status}
-                  label={status}
-                  isActive={filters.status === status}
-                  onClick={() => toggleStatus(status)}
                 />
               ))}
             </div>

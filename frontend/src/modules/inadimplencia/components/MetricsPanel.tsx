@@ -74,19 +74,8 @@ const MetricsPanel = ({ metrics, isLoading }: MetricsPanelProps) => {
         isLoading={isLoading}
       />
       <MetricCard
-        value={formatCurrency(metrics.valorTotalAtraso)}
-        label="Valor em atraso"
-        isLoading={isLoading}
-      />
-      <MetricCard
-        value={`D+${metrics.mediaAtraso}`}
-        label="Media de atraso"
-        isLoading={isLoading}
-      />
-      <MetricCard
-        value={metrics.situacoesCriticas}
-        label="Criticos (D+180)"
-        variant="danger"
+        value={formatCurrency(metrics.saldoDevedorTotal)}
+        label="Saldo Devedor Total"
         isLoading={isLoading}
       />
     </div>

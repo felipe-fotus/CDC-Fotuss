@@ -5,6 +5,7 @@ import ContractRow from './ContractRow';
 interface ContractsTableProps {
   contracts: Contract[];
   isLoading: boolean;
+  onOpenAnotacoes: (contract: Contract) => void;
 }
 
 const LoadingState = () => {
@@ -35,21 +36,21 @@ const LoadingState = () => {
       </style>
       {[...Array(8)].map((_, i) => (
         <div key={i} style={skeletonRowStyle}>
+          <div style={{ ...skeletonCellStyle, width: '30px' }} />
           <div style={{ ...skeletonCellStyle, width: '120px' }} />
           <div style={{ ...skeletonCellStyle, width: '150px' }} />
           <div style={{ ...skeletonCellStyle, width: '130px' }} />
           <div style={{ ...skeletonCellStyle, width: '100px' }} />
-          <div style={{ ...skeletonCellStyle, width: '90px' }} />
           <div style={{ ...skeletonCellStyle, width: '60px' }} />
           <div style={{ ...skeletonCellStyle, width: '100px' }} />
-          <div style={{ ...skeletonCellStyle, width: '90px' }} />
+          <div style={{ ...skeletonCellStyle, width: '60px' }} />
         </div>
       ))}
     </div>
   );
 };
 
-const ContractsTable = ({ contracts, isLoading }: ContractsTableProps) => {
+const ContractsTable = ({ contracts, isLoading, onOpenAnotacoes }: ContractsTableProps) => {
   if (isLoading) {
     return <LoadingState />;
   }
@@ -91,19 +92,24 @@ const ContractsTable = ({ contracts, isLoading }: ContractsTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead style={{ width: '50px' }}></TableHead>
             <TableHead style={{ minWidth: '140px' }}>ID Contrato</TableHead>
             <TableHead style={{ minWidth: '180px' }}>Cliente Pagante</TableHead>
             <TableHead style={{ minWidth: '150px' }}>Integrador</TableHead>
-            <TableHead style={{ minWidth: '120px' }}>Origem</TableHead>
-            <TableHead style={{ minWidth: '110px', textAlign: 'center' }}>Vencimento</TableHead>
-            <TableHead style={{ minWidth: '90px', textAlign: 'center' }}>Atraso</TableHead>
-            <TableHead style={{ minWidth: '130px', textAlign: 'right' }}>Valor em Atraso</TableHead>
-            <TableHead style={{ minWidth: '110px' }}>Status</TableHead>
+            <TableHead style={{ minWidth: '130px', textAlign: 'center' }}>1a Parcela Vencida</TableHead>
+            <TableHead style={{ minWidth: '100px', textAlign: 'center' }}>Dias em Atraso</TableHead>
+            <TableHead style={{ minWidth: '130px', textAlign: 'right' }}>Saldo Devedor</TableHead>
+            <TableHead style={{ minWidth: '80px', textAlign: 'center' }}>Notas</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {contracts.map((contract, index) => (
-            <ContractRow key={contract.id} contract={contract} index={index} />
+            <ContractRow
+              key={contract.id}
+              contract={contract}
+              index={index}
+              onOpenAnotacoes={onOpenAnotacoes}
+            />
           ))}
         </TableBody>
       </Table>

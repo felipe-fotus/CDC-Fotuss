@@ -6,12 +6,12 @@ import { Prisma } from '@prisma/client';
 export interface ContractListItem {
   id: string;
   clientePagante: string;
+  clienteCpfCnpj: string;
   integrador: string;
-  origemContrato: string;
+  integradorCpfCnpj: string;
   dataVencimento: string;
   diasAtraso: number;
-  valorAtraso: number;
-  status: string;
+  saldoDevedor: number;
 }
 
 export interface ContractDetail {
@@ -58,9 +58,8 @@ export class ContractsRepository {
     limit: number;
     totalPages: number;
   }> {
-    const { search, delayRanges, origins, statuses, sortField, sortDirection, page, limit } = query;
+    const { search, delayRanges, sortField, sortDirection, page, limit } = query;
     const skip = (page - 1) * limit;
-    const today = new Date();
 
     // Build delay range conditions
     let delayConditions: Prisma.Sql[] = [];
@@ -80,32 +79,31 @@ export class ContractsRepository {
         SELECT
           c.id,
           cl.nome as cliente_pagante,
+          cl.cpf_cnpj as cliente_cpf_cnpj,
           c.integrador,
-          c.origem_contrato,
+          c.integrador_cnpj,
           MIN(p.data_vencimento) as data_vencimento_mais_antiga,
           MAX(EXTRACT(DAY FROM (NOW() - p.data_vencimento))::int) as dias_atraso,
-          SUM(p.valor_atualizado) as valor_atraso,
-          c.status
+          SUM(p.valor_atualizado) as saldo_devedor
         FROM contratos c
         JOIN clientes cl ON c.cliente_id = cl.id
         JOIN parcelas p ON p.contrato_id = c.id
         WHERE p.status = 'em_atraso'
-        GROUP BY c.id, cl.nome, c.integrador, c.origem_contrato, c.status
+        GROUP BY c.id, cl.nome, cl.cpf_cnpj, c.integrador, c.integrador_cnpj
         HAVING MAX(EXTRACT(DAY FROM (NOW() - p.data_vencimento))::int) > 0
       )
       SELECT
         id,
         cliente_pagante,
+        cliente_cpf_cnpj,
         integrador,
-        origem_contrato,
+        integrador_cnpj,
         data_vencimento_mais_antiga as data_vencimento,
         dias_atraso,
-        valor_atraso,
-        status
+        saldo_devedor
       FROM contrato_atrasos
       WHERE 1=1
-      ${search ? Prisma.sql`AND (cliente_pagante ILIKE ${`%${search}%`} OR integrador ILIKE ${`%${search}%`})` : Prisma.empty}
-      ${origins ? Prisma.sql`AND origem_contrato IN (${Prisma.join(origins.split(',').map((o) => o.trim()))})` : Prisma.empty}
+      ${search ? Prisma.sql`AND (cliente_pagante ILIKE ${`%${search}%`} OR integrador ILIKE ${`%${search}%`} OR cliente_cpf_cnpj ILIKE ${`%${search}%`} OR integrador_cnpj ILIKE ${`%${search}%`})` : Prisma.empty}
       ${delayConditions.length > 0 ? Prisma.sql`AND (${Prisma.join(delayConditions, ' OR ')})` : Prisma.empty}
     `;
 
@@ -116,7 +114,7 @@ export class ContractsRepository {
     const total = Number(countResult[0].count);
 
     // Get paginated data with sorting
-    const orderByField = sortField === 'valorAtraso' ? 'valor_atraso' :
+    const orderByField = sortField === 'saldoDevedor' ? 'saldo_devedor' :
                          sortField === 'diasAtraso' ? 'dias_atraso' :
                          sortField === 'clientePagante' ? 'cliente_pagante' :
                          sortField === 'dataVencimento' ? 'data_vencimento' :
@@ -133,12 +131,12 @@ export class ContractsRepository {
     const transformedData = data.map((row: Record<string, unknown>) => ({
       id: row.id as string,
       clientePagante: row.cliente_pagante as string,
+      clienteCpfCnpj: row.cliente_cpf_cnpj as string,
       integrador: row.integrador as string,
-      origemContrato: row.origem_contrato as string,
+      integradorCpfCnpj: row.integrador_cnpj as string,
       dataVencimento: (row.data_vencimento as Date).toISOString(),
       diasAtraso: Number(row.dias_atraso),
-      valorAtraso: Number(row.valor_atraso),
-      status: row.status as string,
+      saldoDevedor: Number(row.saldo_devedor),
     }));
 
     return {
@@ -224,19 +222,17 @@ export class ContractsRepository {
   }
 
   async getMetrics(): Promise<{
-    totalContracts: number;
-    totalValueInDelay: number;
-    averageDelayDays: number;
-    criticalCount: number;
+    totalContratos: number;
+    saldoDevedorTotal: number;
   }> {
     const result = await prisma.$queryRaw<
-      [{ total: bigint; total_value: number; avg_days: number; critical: bigint }]
+      [{ total: bigint; total_value: number }]
     >`
       WITH contrato_atrasos AS (
         SELECT
           c.id,
           MAX(EXTRACT(DAY FROM (NOW() - p.data_vencimento))::int) as dias_atraso,
-          SUM(p.valor_atualizado) as valor_atraso
+          SUM(p.valor_atualizado) as saldo_devedor
         FROM contratos c
         JOIN parcelas p ON p.contrato_id = c.id
         WHERE p.status = 'em_atraso'
@@ -245,17 +241,13 @@ export class ContractsRepository {
       )
       SELECT
         COUNT(*) as total,
-        COALESCE(SUM(valor_atraso), 0) as total_value,
-        COALESCE(AVG(dias_atraso), 0) as avg_days,
-        COUNT(*) FILTER (WHERE dias_atraso >= 180) as critical
+        COALESCE(SUM(saldo_devedor), 0) as total_value
       FROM contrato_atrasos
     `;
 
     return {
-      totalContracts: Number(result[0].total),
-      totalValueInDelay: Number(result[0].total_value),
-      averageDelayDays: Math.round(Number(result[0].avg_days)),
-      criticalCount: Number(result[0].critical),
+      totalContratos: Number(result[0].total),
+      saldoDevedorTotal: Number(result[0].total_value),
     };
   }
 

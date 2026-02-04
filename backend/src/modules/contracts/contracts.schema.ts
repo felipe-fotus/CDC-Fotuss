@@ -3,8 +3,6 @@ import { z } from 'zod';
 export const listContractsQuerySchema = z.object({
   search: z.string().optional(),
   delayRanges: z.string().optional(), // comma-separated: "D+30,D+60"
-  origins: z.string().optional(), // comma-separated
-  statuses: z.string().optional(), // comma-separated
   sortField: z.string().optional().default('diasAtraso'),
   sortDirection: z.enum(['asc', 'desc']).optional().default('desc'),
   page: z.coerce.number().min(1).optional().default(1),

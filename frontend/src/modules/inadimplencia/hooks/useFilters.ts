@@ -3,10 +3,11 @@ import type { ContractFilters } from '../types/contract';
 
 const initialFilters: ContractFilters = {
   faixasAtraso: [],
-  clientePagante: '',
-  integrador: '',
-  status: '',
-  origemContrato: '',
+  clienteNome: '',
+  clienteCpfCnpj: '',
+  integradorNome: '',
+  integradorCpfCnpj: '',
+  statusTratamento: 'todos',
 };
 
 export function useFilters() {
@@ -34,10 +35,11 @@ export function useFilters() {
 
   const hasActiveFilters =
     filters.faixasAtraso.length > 0 ||
-    filters.clientePagante !== '' ||
-    filters.integrador !== '' ||
-    filters.status !== '' ||
-    filters.origemContrato !== '';
+    filters.clienteNome !== '' ||
+    filters.clienteCpfCnpj !== '' ||
+    filters.integradorNome !== '' ||
+    filters.integradorCpfCnpj !== '' ||
+    filters.statusTratamento !== 'todos';
 
   return {
     filters,

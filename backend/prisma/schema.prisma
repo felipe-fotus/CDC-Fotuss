@@ -22,23 +22,36 @@ model Cliente {
 }
 
 model Contrato {
-  id                 String    @id @default(cuid())
-  clienteId          String    @map("cliente_id")
-  cliente            Cliente   @relation(fields: [clienteId], references: [id])
+  id                 String       @id @default(cuid())
+  clienteId          String       @map("cliente_id")
+  cliente            Cliente      @relation(fields: [clienteId], references: [id])
   integrador         String
-  integradorCnpj     String    @map("integrador_cnpj")
-  origemContrato     String    @map("origem_contrato")
-  dataContratacao    DateTime  @map("data_contratacao")
-  valorTotal         Decimal   @map("valor_total") @db.Decimal(12, 2)
-  valorEntrada       Decimal   @map("valor_entrada") @db.Decimal(12, 2)
-  quantidadeParcelas Int       @map("quantidade_parcelas")
-  taxaJuros          Decimal   @map("taxa_juros") @db.Decimal(5, 2)
+  integradorCnpj     String       @map("integrador_cnpj")
+  origemContrato     String       @map("origem_contrato")
+  dataContratacao    DateTime     @map("data_contratacao")
+  valorTotal         Decimal      @map("valor_total") @db.Decimal(12, 2)
+  valorEntrada       Decimal      @map("valor_entrada") @db.Decimal(12, 2)
+  quantidadeParcelas Int          @map("quantidade_parcelas")
+  taxaJuros          Decimal      @map("taxa_juros") @db.Decimal(5, 2)
   status             String
+  tratado            Boolean      @default(false)
   parcelas           Parcela[]
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  anotacoes          Anotacao[]
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
   @@map("contratos")
+}
+
+model Anotacao {
+  id         String   @id @default(cuid())
+  contratoId String   @map("contrato_id")
+  contrato   Contrato @relation(fields: [contratoId], references: [id])
+  texto      String
+  autor      String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("anotacoes")
 }
 
 model Parcela {

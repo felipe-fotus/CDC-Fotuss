@@ -80,7 +80,7 @@ export async function clientsRoutes(app: FastifyInstance) {
       success: true,
       data: client.contratos.map((c) => {
         const parcelasEmAtraso = c.parcelas;
-        const valorAtraso = parcelasEmAtraso.reduce(
+        const saldoDevedor = parcelasEmAtraso.reduce(
           (sum, p) => sum + Number(p.valorAtualizado),
           0
         );
@@ -97,12 +97,10 @@ export async function clientsRoutes(app: FastifyInstance) {
         return {
           id: c.id,
           integrador: c.integrador,
-          origemContrato: c.origemContrato,
           dataContratacao: c.dataContratacao.toISOString(),
           valorTotal: Number(c.valorTotal),
-          status: c.status,
           parcelasEmAtraso: parcelasEmAtraso.length,
-          valorAtraso,
+          saldoDevedor,
           diasAtraso,
         };
       }),

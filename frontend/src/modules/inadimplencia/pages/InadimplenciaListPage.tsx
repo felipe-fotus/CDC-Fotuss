@@ -6,13 +6,32 @@ import FiltersPanel from '../components/FiltersPanel';
 import SortControl from '../components/SortControl';
 import ContractsTable from '../components/ContractsTable';
 import MetricsPanel from '../components/MetricsPanel';
+import QuickFilters from '../components/QuickFilters';
+import AnotacoesModal from '../components/AnotacoesModal';
 import { getYesterdayDate } from '../../../lib/dates';
+import type { Contract } from '../types/contract';
 
 const InadimplenciaListPage = () => {
   const { filters, updateFilter, toggleFaixaAtraso, clearFilters, hasActiveFilters } = useFilters();
   const { sorting, setSortingFromValue, sortingValue } = useSorting();
-  const { filteredContracts, metrics, isLoading, uniqueOrigens, uniqueStatus } = useContracts(filters, sorting);
+  const { filteredContracts, metrics, isLoading, refetch, tratadosCount, pendentesCount, contracts } = useContracts(filters, sorting);
   const [isFiltersPanelOpen, setIsFiltersPanelOpen] = useState(true);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenAnotacoes = (contract: Contract) => {
+    setSelectedContract(contract);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedContract(null);
+  };
+
+  const handleModalUpdate = () => {
+    refetch();
+  };
 
   const pageStyle: React.CSSProperties = {
     display: 'flex',
@@ -70,6 +89,13 @@ const InadimplenciaListPage = () => {
     gap: 'var(--spacing-sm)',
   };
 
+  const toolbarLeftStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-md)',
+    flexWrap: 'wrap',
+  };
+
   const resultsInfoStyle: React.CSSProperties = {
     fontSize: 'var(--text-sm)',
     color: 'var(--color-text-secondary)',
@@ -84,8 +110,6 @@ const InadimplenciaListPage = () => {
         onToggleFaixa={toggleFaixaAtraso}
         onClear={clearFilters}
         hasActiveFilters={hasActiveFilters}
-        uniqueOrigens={uniqueOrigens}
-        uniqueStatus={uniqueStatus}
         isOpen={isFiltersPanelOpen}
         onToggleOpen={() => setIsFiltersPanelOpen(!isFiltersPanelOpen)}
       />
@@ -109,24 +133,49 @@ const InadimplenciaListPage = () => {
         <div style={mainContentStyle}>
           {/* Toolbar */}
           <div style={toolbarStyle}>
-            <div style={resultsInfoStyle}>
-              {isLoading ? (
-                'Carregando...'
-              ) : (
-                <>
-                  <strong>{filteredContracts.length}</strong> contrato
-                  {filteredContracts.length !== 1 ? 's' : ''}
-                  {hasActiveFilters && ' (filtrado)'}
-                </>
-              )}
+            <div style={toolbarLeftStyle}>
+              <QuickFilters
+                statusTratamento={filters.statusTratamento}
+                onStatusChange={(status) => updateFilter('statusTratamento', status)}
+                totalCount={contracts.length}
+                tratadosCount={tratadosCount}
+                pendentesCount={pendentesCount}
+              />
+              <div style={resultsInfoStyle}>
+                {isLoading ? (
+                  'Carregando...'
+                ) : (
+                  <>
+                    <strong>{filteredContracts.length}</strong> contrato
+                    {filteredContracts.length !== 1 ? 's' : ''}
+                    {hasActiveFilters && ' (filtrado)'}
+                  </>
+                )}
+              </div>
             </div>
             <SortControl value={sortingValue} onChange={setSortingFromValue} />
           </div>
 
           {/* Table */}
-          <ContractsTable contracts={filteredContracts} isLoading={isLoading} />
+          <ContractsTable
+            contracts={filteredContracts}
+            isLoading={isLoading}
+            onOpenAnotacoes={handleOpenAnotacoes}
+          />
         </div>
       </div>
+
+      {/* Modal de Anotacoes */}
+      {selectedContract && (
+        <AnotacoesModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          contratoId={selectedContract.id}
+          clienteNome={selectedContract.clientePagante}
+          tratado={selectedContract.tratado}
+          onUpdate={handleModalUpdate}
+        />
+      )}
     </div>
   );
 };

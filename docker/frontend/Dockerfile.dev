@@ -20,6 +20,10 @@ COPY frontend ./frontend
 # Install all dependencies
 RUN pnpm install --frozen-lockfile
 
+# Build design system
+WORKDIR /app/packages/design-system
+RUN pnpm build
+
 WORKDIR /app/frontend
 
 ENV NODE_ENV=development
