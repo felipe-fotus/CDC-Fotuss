@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Input } from '@cdc-fotus/design-system';
+import { Modal, Button } from '@cdc-fotus/design-system';
 import type { Anotacao } from '../types/contract';
 import { fetchAnotacoes, addAnotacao, marcarComoTratado } from '../services/contractsService';
 
@@ -11,6 +11,28 @@ interface AnotacoesModalProps {
   tratado: boolean;
   onUpdate: () => void;
 }
+
+// Opcoes pre-definidas de tipo de contato
+const TIPOS_CONTATO = [
+  'Ligacao',
+  'WhatsApp',
+  'E-mail',
+  'SMS',
+  'Visita',
+];
+
+// Opcoes pre-definidas de resultado do contato
+const RESULTADOS_CONTATO = [
+  'Cliente atendeu - promessa de pagamento',
+  'Cliente atendeu - sem previsao',
+  'Cliente atendeu - contestou divida',
+  'Cliente nao atendeu - deixou recado',
+  'Cliente nao atendeu - caixa postal',
+  'Numero inexistente/incorreto',
+  'Enviado boleto atualizado',
+  'Acordo de parcelamento',
+  'Pagamento confirmado',
+];
 
 const AnotacoesModal = ({
   isOpen,
@@ -25,11 +47,18 @@ const AnotacoesModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [tratado, setTratado] = useState(initialTratado);
+  const [tipoContato, setTipoContato] = useState('');
+  const [resultadoContato, setResultadoContato] = useState('');
+  const [marcarComoTratadoAoSalvar, setMarcarComoTratadoAoSalvar] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadAnotacoes();
       setTratado(initialTratado);
+      setTipoContato('');
+      setResultadoContato('');
+      setNovaAnotacao('');
+      setMarcarComoTratadoAoSalvar(false);
     }
   }, [isOpen, contratoId, initialTratado]);
 
@@ -44,12 +73,36 @@ const AnotacoesModal = ({
   };
 
   const handleAddAnotacao = async () => {
-    if (!novaAnotacao.trim()) return;
+    // Montar texto da anotacao com tipo e resultado se selecionados
+    let textoFinal = '';
+    if (tipoContato) {
+      textoFinal += `[${tipoContato}] `;
+    }
+    if (resultadoContato) {
+      textoFinal += `${resultadoContato}`;
+      if (novaAnotacao.trim()) {
+        textoFinal += ` - ${novaAnotacao.trim()}`;
+      }
+    } else if (novaAnotacao.trim()) {
+      textoFinal += novaAnotacao.trim();
+    }
+
+    if (!textoFinal) return;
 
     setIsSaving(true);
     try {
-      await addAnotacao(contratoId, novaAnotacao.trim(), 'Usuário Atual');
+      await addAnotacao(contratoId, textoFinal, 'Usuario Atual');
+
+      // Se marcou para tratar ao salvar
+      if (marcarComoTratadoAoSalvar && !tratado) {
+        await marcarComoTratado(contratoId, true);
+        setTratado(true);
+      }
+
       setNovaAnotacao('');
+      setTipoContato('');
+      setResultadoContato('');
+      setMarcarComoTratadoAoSalvar(false);
       await loadAnotacoes();
       onUpdate();
     } finally {
@@ -141,9 +194,21 @@ const AnotacoesModal = ({
     marginBottom: 'var(--spacing-md)',
   };
 
+  const selectStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '0.5rem',
+    fontSize: 'var(--text-sm)',
+    fontFamily: 'var(--font-sans)',
+    backgroundColor: 'var(--color-surface)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-md)',
+    outline: 'none',
+    cursor: 'pointer',
+  };
+
   const textareaStyle: React.CSSProperties = {
     width: '100%',
-    minHeight: '80px',
+    minHeight: '60px',
     padding: 'var(--spacing-sm)',
     fontSize: 'var(--text-sm)',
     fontFamily: 'var(--font-sans)',
@@ -154,11 +219,21 @@ const AnotacoesModal = ({
     outline: 'none',
   };
 
+  const checkboxContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem',
+    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    borderRadius: 'var(--radius-md)',
+    border: '1px solid rgba(16, 185, 129, 0.2)',
+  };
+
   const anotacoesListStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--spacing-sm)',
-    maxHeight: '300px',
+    maxHeight: '250px',
     overflowY: 'auto',
   };
 
@@ -199,6 +274,13 @@ const AnotacoesModal = ({
     color: 'var(--color-text-muted)',
     fontSize: 'var(--text-sm)',
   };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: 'var(--spacing-sm)',
+  };
+
+  const canSave = tipoContato || resultadoContato || novaAnotacao.trim();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md" showCloseButton={false}>
@@ -256,9 +338,32 @@ const AnotacoesModal = ({
       </div>
 
       <div style={inputAreaStyle}>
+        <div style={rowStyle}>
+          <select
+            style={{ ...selectStyle, flex: 1 }}
+            value={tipoContato}
+            onChange={(e) => setTipoContato(e.target.value)}
+          >
+            <option value="">Tipo de contato...</option>
+            {TIPOS_CONTATO.map((tipo) => (
+              <option key={tipo} value={tipo}>{tipo}</option>
+            ))}
+          </select>
+          <select
+            style={{ ...selectStyle, flex: 2 }}
+            value={resultadoContato}
+            onChange={(e) => setResultadoContato(e.target.value)}
+          >
+            <option value="">Resultado do contato...</option>
+            {RESULTADOS_CONTATO.map((resultado) => (
+              <option key={resultado} value={resultado}>{resultado}</option>
+            ))}
+          </select>
+        </div>
+
         <textarea
           style={textareaStyle}
-          placeholder="Adicione uma anotacao sobre este contrato..."
+          placeholder="Observacoes adicionais (opcional)..."
           value={novaAnotacao}
           onChange={(e) => setNovaAnotacao(e.target.value)}
           onFocus={(e) => {
@@ -268,12 +373,27 @@ const AnotacoesModal = ({
             e.target.style.borderColor = 'var(--color-border)';
           }}
         />
+
+        {!tratado && (
+          <label style={checkboxContainerStyle}>
+            <input
+              type="checkbox"
+              checked={marcarComoTratadoAoSalvar}
+              onChange={(e) => setMarcarComoTratadoAoSalvar(e.target.checked)}
+              style={{ width: '16px', height: '16px', accentColor: '#10b981' }}
+            />
+            <span style={{ fontSize: 'var(--text-sm)', color: '#10b981' }}>
+              Marcar contrato como tratado ao salvar
+            </span>
+          </label>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             variant="primary"
             size="sm"
             onClick={handleAddAnotacao}
-            disabled={!novaAnotacao.trim() || isSaving}
+            disabled={!canSave || isSaving}
           >
             {isSaving ? 'Salvando...' : 'Adicionar'}
           </Button>

@@ -66,45 +66,27 @@ const FiltersPanel = ({
   isOpen,
   onToggleOpen,
 }: FiltersPanelProps) => {
-  const [clienteNome, setClienteNome] = useState(filters.clienteNome || '');
-  const [clienteCpfCnpj, setClienteCpfCnpj] = useState(filters.clienteCpfCnpj || '');
-  const [integradorNome, setIntegradorNome] = useState(filters.integradorNome || '');
-  const [integradorCpfCnpj, setIntegradorCpfCnpj] = useState(filters.integradorCpfCnpj || '');
+  const [clienteBusca, setClienteBusca] = useState(filters.clienteBusca || '');
+  const [integradorBusca, setIntegradorBusca] = useState(filters.integradorBusca || '');
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      onUpdateFilter('clienteNome', clienteNome);
+      onUpdateFilter('clienteBusca', clienteBusca);
     }, 300);
     return () => clearTimeout(timer);
-  }, [clienteNome, onUpdateFilter]);
+  }, [clienteBusca, onUpdateFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      onUpdateFilter('clienteCpfCnpj', clienteCpfCnpj);
+      onUpdateFilter('integradorBusca', integradorBusca);
     }, 300);
     return () => clearTimeout(timer);
-  }, [clienteCpfCnpj, onUpdateFilter]);
+  }, [integradorBusca, onUpdateFilter]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onUpdateFilter('integradorNome', integradorNome);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [integradorNome, onUpdateFilter]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onUpdateFilter('integradorCpfCnpj', integradorCpfCnpj);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [integradorCpfCnpj, onUpdateFilter]);
-
-  useEffect(() => {
-    if (!filters.clienteNome && clienteNome) setClienteNome('');
-    if (!filters.clienteCpfCnpj && clienteCpfCnpj) setClienteCpfCnpj('');
-    if (!filters.integradorNome && integradorNome) setIntegradorNome('');
-    if (!filters.integradorCpfCnpj && integradorCpfCnpj) setIntegradorCpfCnpj('');
-  }, [filters.clienteNome, filters.clienteCpfCnpj, filters.integradorNome, filters.integradorCpfCnpj]);
+    if (!filters.clienteBusca && clienteBusca) setClienteBusca('');
+    if (!filters.integradorBusca && integradorBusca) setIntegradorBusca('');
+  }, [filters.clienteBusca, filters.integradorBusca]);
 
   const panelStyle: React.CSSProperties = {
     position: 'sticky',
@@ -247,42 +229,30 @@ const FiltersPanel = ({
           <div style={sectionStyle}>
             <label style={labelStyle}>Cliente</label>
             <Input
-              placeholder="Nome do cliente..."
-              value={clienteNome}
-              onChange={(e) => setClienteNome(e.target.value)}
+              placeholder="Nome ou CPF/CNPJ..."
+              value={clienteBusca}
+              onChange={(e) => setClienteBusca(e.target.value)}
               style={{ fontSize: 'var(--text-sm)' }}
-            />
-            <Input
-              placeholder="CPF/CNPJ do cliente..."
-              value={clienteCpfCnpj}
-              onChange={(e) => setClienteCpfCnpj(e.target.value)}
-              style={{ fontSize: 'var(--text-sm)', marginTop: '0.5rem' }}
             />
           </div>
 
           <div style={sectionStyle}>
             <label style={labelStyle}>Integrador</label>
             <Input
-              placeholder="Nome do integrador..."
-              value={integradorNome}
-              onChange={(e) => setIntegradorNome(e.target.value)}
+              placeholder="Nome ou CNPJ..."
+              value={integradorBusca}
+              onChange={(e) => setIntegradorBusca(e.target.value)}
               style={{ fontSize: 'var(--text-sm)' }}
-            />
-            <Input
-              placeholder="CPF/CNPJ do integrador..."
-              value={integradorCpfCnpj}
-              onChange={(e) => setIntegradorCpfCnpj(e.target.value)}
-              style={{ fontSize: 'var(--text-sm)', marginTop: '0.5rem' }}
             />
           </div>
 
           <div style={sectionStyle}>
-            <label style={labelStyle}>Faixa de Atraso</label>
+            <label style={labelStyle}>Faixa de Atraso (dias)</label>
             <div style={chipsContainerStyle}>
               {FAIXAS_ATRASO.map((faixa) => (
                 <Chip
                   key={faixa}
-                  label={`D+${faixa}`}
+                  label={String(faixa)}
                   isActive={filters.faixasAtraso.includes(faixa)}
                   onClick={() => onToggleFaixa(faixa)}
                 />

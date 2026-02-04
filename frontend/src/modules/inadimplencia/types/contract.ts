@@ -28,6 +28,9 @@ export interface Parcela {
   valorPago?: number;
   status: ParcelaStatus;
   diasAtraso: number;
+  // Limites de cobranca (desconto permitido)
+  limiteDescontoMin: number; // Valor minimo que pode cobrar
+  limiteDescontoMax: number; // Valor maximo de desconto em %
 }
 
 export type ParcelaStatus = 'paga' | 'em_atraso' | 'a_vencer';
@@ -47,6 +50,8 @@ export interface ContractDetail {
   // Integrador
   integrador: string;
   integradorCnpj: string;
+  integradorTelefone: string;
+  integradorEmail: string;
   // Parcelas
   parcelas: Parcela[];
   // Resumo de atraso
@@ -95,10 +100,8 @@ export type SortDirection = 'asc' | 'desc';
 
 export interface ContractFilters {
   faixasAtraso: number[];
-  clienteNome: string;
-  clienteCpfCnpj: string;
-  integradorNome: string;
-  integradorCpfCnpj: string;
+  clienteBusca: string; // Busca por nome ou CPF/CNPJ
+  integradorBusca: string; // Busca por nome ou CPF/CNPJ
   statusTratamento: 'todos' | 'tratados' | 'pendentes';
 }
 

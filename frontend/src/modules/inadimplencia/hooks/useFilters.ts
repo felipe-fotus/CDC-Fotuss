@@ -3,10 +3,8 @@ import type { ContractFilters } from '../types/contract';
 
 const initialFilters: ContractFilters = {
   faixasAtraso: [],
-  clienteNome: '',
-  clienteCpfCnpj: '',
-  integradorNome: '',
-  integradorCpfCnpj: '',
+  clienteBusca: '',
+  integradorBusca: '',
   statusTratamento: 'todos',
 };
 
@@ -35,10 +33,8 @@ export function useFilters() {
 
   const hasActiveFilters =
     filters.faixasAtraso.length > 0 ||
-    filters.clienteNome !== '' ||
-    filters.clienteCpfCnpj !== '' ||
-    filters.integradorNome !== '' ||
-    filters.integradorCpfCnpj !== '' ||
+    filters.clienteBusca !== '' ||
+    filters.integradorBusca !== '' ||
     filters.statusTratamento !== 'todos';
 
   return {

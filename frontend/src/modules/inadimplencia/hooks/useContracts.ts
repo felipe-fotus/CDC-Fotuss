@@ -67,35 +67,23 @@ export function useContracts(
       });
     }
 
-    // Filtro por nome do cliente
-    if (filters.clienteNome) {
-      const searchTerm = filters.clienteNome.toLowerCase();
+    // Filtro por cliente (nome ou CPF/CNPJ)
+    if (filters.clienteBusca) {
+      const searchTerm = filters.clienteBusca.toLowerCase();
+      const searchTermDigits = filters.clienteBusca.replace(/\D/g, '');
       result = result.filter((contract) =>
-        contract.clientePagante.toLowerCase().includes(searchTerm)
+        contract.clientePagante.toLowerCase().includes(searchTerm) ||
+        contract.clienteCpfCnpj.replace(/\D/g, '').includes(searchTermDigits)
       );
     }
 
-    // Filtro por CPF/CNPJ do cliente
-    if (filters.clienteCpfCnpj) {
-      const searchTerm = filters.clienteCpfCnpj.replace(/\D/g, '');
+    // Filtro por integrador (nome ou CPF/CNPJ)
+    if (filters.integradorBusca) {
+      const searchTerm = filters.integradorBusca.toLowerCase();
+      const searchTermDigits = filters.integradorBusca.replace(/\D/g, '');
       result = result.filter((contract) =>
-        contract.clienteCpfCnpj.replace(/\D/g, '').includes(searchTerm)
-      );
-    }
-
-    // Filtro por nome do integrador
-    if (filters.integradorNome) {
-      const searchTerm = filters.integradorNome.toLowerCase();
-      result = result.filter((contract) =>
-        contract.integrador.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    // Filtro por CPF/CNPJ do integrador
-    if (filters.integradorCpfCnpj) {
-      const searchTerm = filters.integradorCpfCnpj.replace(/\D/g, '');
-      result = result.filter((contract) =>
-        contract.integradorCpfCnpj.replace(/\D/g, '').includes(searchTerm)
+        contract.integrador.toLowerCase().includes(searchTerm) ||
+        contract.integradorCpfCnpj.replace(/\D/g, '').includes(searchTermDigits)
       );
     }
 

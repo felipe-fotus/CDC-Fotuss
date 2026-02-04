@@ -21,10 +21,10 @@ export function formatDate(isoDate: string): string {
 }
 
 /**
- * Formata os dias em atraso no formato D+XX.
+ * Formata os dias em atraso (apenas o numero).
  */
 export function formatDaysOverdue(days: number): string {
-  return `D+${days}`;
+  return String(days);
 }
 
 /**

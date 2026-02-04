@@ -17,18 +17,18 @@ const nomes = [
 ];
 
 const integradores = [
-  { nome: 'Solar Tech Brasil', cnpj: '12.345.678/0001-90' },
-  { nome: 'EcoSolar Integrações', cnpj: '23.456.789/0001-01' },
-  { nome: 'SunPower Solutions', cnpj: '34.567.890/0001-12' },
-  { nome: 'Verde Energia', cnpj: '45.678.901/0001-23' },
-  { nome: 'Fotovolt Premium', cnpj: '56.789.012/0001-34' },
-  { nome: 'Energia Limpa BR', cnpj: '67.890.123/0001-45' },
-  { nome: 'SolBrasil Sistemas', cnpj: '78.901.234/0001-56' },
-  { nome: 'PowerSun Integradora', cnpj: '89.012.345/0001-67' },
-  { nome: 'Luz Solar Engenharia', cnpj: '90.123.456/0001-78' },
-  { nome: 'Nova Energia Solar', cnpj: '01.234.567/0001-89' },
-  { nome: 'Prime Solar', cnpj: '11.222.333/0001-44' },
-  { nome: 'Sustenta Energia', cnpj: '22.333.444/0001-55' },
+  { nome: 'Solar Tech Brasil', cnpj: '12.345.678/0001-90', telefone: '(11) 3456-7890', email: 'contato@solartech.com.br' },
+  { nome: 'EcoSolar Integrações', cnpj: '23.456.789/0001-01', telefone: '(21) 2345-6789', email: 'comercial@ecosolar.com.br' },
+  { nome: 'SunPower Solutions', cnpj: '34.567.890/0001-12', telefone: '(31) 3456-7890', email: 'atendimento@sunpower.com.br' },
+  { nome: 'Verde Energia', cnpj: '45.678.901/0001-23', telefone: '(41) 4567-8901', email: 'contato@verdeenergia.com.br' },
+  { nome: 'Fotovolt Premium', cnpj: '56.789.012/0001-34', telefone: '(51) 5678-9012', email: 'vendas@fotovolt.com.br' },
+  { nome: 'Energia Limpa BR', cnpj: '67.890.123/0001-45', telefone: '(71) 6789-0123', email: 'suporte@energialimpa.com.br' },
+  { nome: 'SolBrasil Sistemas', cnpj: '78.901.234/0001-56', telefone: '(61) 7890-1234', email: 'contato@solbrasil.com.br' },
+  { nome: 'PowerSun Integradora', cnpj: '89.012.345/0001-67', telefone: '(85) 8901-2345', email: 'comercial@powersun.com.br' },
+  { nome: 'Luz Solar Engenharia', cnpj: '90.123.456/0001-78', telefone: '(81) 9012-3456', email: 'engenharia@luzsolar.com.br' },
+  { nome: 'Nova Energia Solar', cnpj: '01.234.567/0001-89', telefone: '(19) 0123-4567', email: 'contato@novaenergia.com.br' },
+  { nome: 'Prime Solar', cnpj: '11.222.333/0001-44', telefone: '(47) 1122-3344', email: 'atendimento@primesolar.com.br' },
+  { nome: 'Sustenta Energia', cnpj: '22.333.444/0001-55', telefone: '(48) 2233-4455', email: 'comercial@sustenta.com.br' },
 ];
 
 const origens = ['Loja Física', 'E-commerce', 'Parceiro Comercial', 'Indicação', 'Televendas'];
@@ -183,6 +183,21 @@ function generateParcelas(
       ? valorParcela * (1 + 0.01 * diasAtraso + 0.02) // 1% ao mês + 2% multa
       : valorParcela;
 
+    // Calcular limites de desconto baseado na tabela de credito
+    // Quanto maior o atraso, maior o desconto permitido
+    let limiteDescontoMax = 0;
+    if (diasAtraso >= 360) {
+      limiteDescontoMax = 30; // 30% de desconto para atrasos > 360 dias
+    } else if (diasAtraso >= 180) {
+      limiteDescontoMax = 20; // 20% para 180-359 dias
+    } else if (diasAtraso >= 90) {
+      limiteDescontoMax = 10; // 10% para 90-179 dias
+    } else if (diasAtraso >= 30) {
+      limiteDescontoMax = 5; // 5% para 30-89 dias
+    }
+
+    const limiteDescontoMin = Math.round((valorAtualizado * (1 - limiteDescontoMax / 100)) * 100) / 100;
+
     parcelas.push({
       numero: i + 1,
       dataVencimento: dataVencimento.toISOString().split('T')[0],
@@ -192,6 +207,8 @@ function generateParcelas(
       valorPago,
       status,
       diasAtraso: Math.max(0, diasAtraso),
+      limiteDescontoMin,
+      limiteDescontoMax,
     });
   }
 
@@ -235,6 +252,8 @@ function generateContractDetail(index: number): ContractDetail {
     cliente,
     integrador: integradorData.nome,
     integradorCnpj: integradorData.cnpj,
+    integradorTelefone: integradorData.telefone,
+    integradorEmail: integradorData.email,
     parcelas,
     parcelasEmAtraso: parcelasEmAtraso.length,
     valorTotalAtraso: Math.round(valorTotalAtraso * 100) / 100,
