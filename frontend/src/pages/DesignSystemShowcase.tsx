@@ -26,12 +26,21 @@ import {
   TableHead,
   TableCell,
   EmptyState,
+  Switch,
+  DateInput,
+  CurrencyInput,
+  useToast,
 } from '@cdc-fotus/design-system';
 
 export default function DesignSystemShowcase() {
+  const { showToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [selectValue, setSelectValue] = useState('');
+  const [switchValue, setSwitchValue] = useState(false);
+  const [switchValue2, setSwitchValue2] = useState(true);
+  const [dateValue, setDateValue] = useState('');
+  const [currencyValue, setCurrencyValue] = useState(0);
 
   const sectionStyles: React.CSSProperties = {
     marginBottom: 'var(--spacing-8)',
@@ -139,6 +148,126 @@ export default function DesignSystemShowcase() {
             ]}
           />
         </Grid>
+      </section>
+
+      {/* Switch */}
+      <section style={sectionStyles}>
+        <h2 style={titleStyles}>Switch</h2>
+
+        <h3 style={subtitleStyles}>Sizes</h3>
+        <HStack gap="xl" style={{ marginBottom: 'var(--spacing-6)' }}>
+          <Switch
+            checked={switchValue}
+            onChange={setSwitchValue}
+            size="sm"
+            label="Small"
+          />
+          <Switch
+            checked={switchValue}
+            onChange={setSwitchValue}
+            size="md"
+            label="Medium"
+          />
+          <Switch
+            checked={switchValue}
+            onChange={setSwitchValue}
+            size="lg"
+            label="Large"
+          />
+        </HStack>
+
+        <h3 style={subtitleStyles}>With Description</h3>
+        <VStack gap="md" align="start" style={{ marginBottom: 'var(--spacing-6)' }}>
+          <Switch
+            checked={switchValue2}
+            onChange={setSwitchValue2}
+            label="Notificações"
+            description="Receber alertas por email"
+          />
+          <Switch
+            checked={false}
+            onChange={() => {}}
+            disabled
+            label="Desabilitado"
+            description="Esta opção está bloqueada"
+          />
+        </VStack>
+      </section>
+
+      {/* DateInput */}
+      <section style={sectionStyles}>
+        <h2 style={titleStyles}>DateInput</h2>
+
+        <Grid cols={3} gap="md">
+          <DateInput
+            label="Data de Vencimento"
+            value={dateValue}
+            onChange={(e) => setDateValue(e.target.value)}
+          />
+          <DateInput
+            label="Com valor mínimo"
+            value={dateValue}
+            onChange={(e) => setDateValue(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            helperText="A partir de hoje"
+          />
+          <DateInput
+            label="Com Erro"
+            value=""
+            onChange={() => {}}
+            error="Data inválida"
+          />
+        </Grid>
+      </section>
+
+      {/* CurrencyInput */}
+      <section style={sectionStyles}>
+        <h2 style={titleStyles}>CurrencyInput</h2>
+        <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--spacing-4)' }}>
+          Digite apenas números. Auto-formata para moeda brasileira (ex: 150000 = R$ 150.000,00)
+        </p>
+
+        <Grid cols={3} gap="md">
+          <CurrencyInput
+            label="Valor"
+            value={currencyValue}
+            onChange={setCurrencyValue}
+          />
+          <CurrencyInput
+            label="Com Limites"
+            value={currencyValue}
+            onChange={setCurrencyValue}
+            minValue={100}
+            maxValue={10000}
+            helperText="Mín: R$ 100,00 | Máx: R$ 10.000,00"
+          />
+          <CurrencyInput
+            label="Com Erro"
+            value={50}
+            onChange={() => {}}
+            error="Valor abaixo do mínimo"
+          />
+        </Grid>
+      </section>
+
+      {/* Toast */}
+      <section style={sectionStyles}>
+        <h2 style={titleStyles}>Toast</h2>
+
+        <HStack gap="sm" wrap>
+          <Button variant="primary" onClick={() => showToast('success', 'Operação realizada com sucesso!')}>
+            Success Toast
+          </Button>
+          <Button variant="danger" onClick={() => showToast('error', 'Ocorreu um erro ao processar.')}>
+            Error Toast
+          </Button>
+          <Button variant="secondary" onClick={() => showToast('warning', 'Atenção: verifique os dados.')}>
+            Warning Toast
+          </Button>
+          <Button variant="ghost" onClick={() => showToast('info', 'Informação importante.')}>
+            Info Toast
+          </Button>
+        </HStack>
       </section>
 
       {/* Badges */}
