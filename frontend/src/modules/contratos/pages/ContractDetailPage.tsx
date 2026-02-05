@@ -381,9 +381,9 @@ const ContractDetailPage = () => {
     setIsBoletoModalOpen(true);
   };
 
-  const handleConfirmBoleto = (dataVencimento: string) => {
+  const handleConfirmBoleto = (boletos: { parcelaNumero: number; dataVencimento: string; valor: number }[]) => {
     // TODO: Implementar integracao real
-    console.log('Boleto gerado com vencimento:', dataVencimento);
+    console.log('Boletos gerados:', boletos);
     setSelectedParcelas(new Set());
   };
 

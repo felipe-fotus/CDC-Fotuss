@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button } from '@cdc-fotus/design-system';
 import type { Parcela } from '../../inadimplencia/types/contract';
 import { formatCurrency, formatDate } from '../../inadimplencia/utils/formatters';
+
+interface BoletoConfig {
+  parcelaNumero: number;
+  dataVencimento: string;
+  valor: number;
+  valorMinimo: number;
+  valorMaximo: number;
+  erro: string | null;
+}
 
 interface BoletoConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   parcelas: Parcela[];
-  onConfirm: (dataVencimento: string) => void;
+  onConfirm: (boletos: BoletoConfig[]) => void;
 }
 
 const BoletoConfirmModal = ({
@@ -17,24 +26,89 @@ const BoletoConfirmModal = ({
   onConfirm,
 }: BoletoConfirmModalProps) => {
   // Data padrao: 7 dias a partir de hoje
-  const defaultDate = new Date();
-  defaultDate.setDate(defaultDate.getDate() + 7);
-  const [dataVencimento, setDataVencimento] = useState(defaultDate.toISOString().split('T')[0]);
+  const getDefaultDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    return date.toISOString().split('T')[0];
+  };
+
+  const [boletos, setBoletos] = useState<BoletoConfig[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const valorTotal = parcelas.reduce((acc, p) => acc + p.valorAtualizado, 0);
-  const valorComDesconto = parcelas.reduce((acc, p) => acc + p.limiteDescontoMin, 0);
-  const descontoTotal = valorTotal - valorComDesconto;
+  // Inicializar boletos quando modal abre ou parcelas mudam
+  useEffect(() => {
+    if (isOpen && parcelas.length > 0) {
+      const defaultDate = getDefaultDate();
+      setBoletos(
+        parcelas.map((p) => ({
+          parcelaNumero: p.numero,
+          dataVencimento: defaultDate,
+          valor: p.valorAtualizado,
+          valorMinimo: p.limiteDescontoMin,
+          valorMaximo: p.valorAtualizado,
+          erro: null,
+        }))
+      );
+    }
+  }, [isOpen, parcelas]);
+
+  const valorTotalOriginal = parcelas.reduce((acc, p) => acc + p.valorAtualizado, 0);
+  const valorTotalBoletos = boletos.reduce((acc, b) => acc + b.valor, 0);
+  const descontoAplicado = valorTotalOriginal - valorTotalBoletos;
+  const hasErrors = boletos.some((b) => b.erro !== null);
+
+  const handleValorChange = (index: number, valorStr: string) => {
+    const valor = parseFloat(valorStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+
+    setBoletos((prev) => {
+      const updated = [...prev];
+      const boleto = updated[index];
+
+      if (valor < boleto.valorMinimo) {
+        updated[index] = {
+          ...boleto,
+          valor,
+          erro: `Valor mínimo permitido: ${formatCurrency(boleto.valorMinimo)}`,
+        };
+      } else if (valor > boleto.valorMaximo) {
+        updated[index] = {
+          ...boleto,
+          valor: boleto.valorMaximo,
+          erro: null,
+        };
+      } else {
+        updated[index] = {
+          ...boleto,
+          valor,
+          erro: null,
+        };
+      }
+
+      return updated;
+    });
+  };
+
+  const handleDataChange = (index: number, data: string) => {
+    setBoletos((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], dataVencimento: data };
+      return updated;
+    });
+  };
 
   const handleConfirm = async () => {
+    if (hasErrors) return;
+
     setIsGenerating(true);
-    // Simular geracao
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    onConfirm(dataVencimento);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    onConfirm(boletos);
     setIsGenerating(false);
     onClose();
   };
 
+  const getParcela = (numero: number) => parcelas.find((p) => p.numero === numero);
+
+  // Styles
   const headerStyle: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
@@ -73,12 +147,42 @@ const BoletoConfirmModal = ({
     marginTop: '0.25rem',
   };
 
+  const contentStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '280px 1fr',
+    gap: 'var(--spacing-lg)',
+    minHeight: '300px',
+  };
+
+  const leftPanelStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-md)',
+  };
+
+  const rightPanelStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-sm)',
+    maxHeight: '400px',
+    overflowY: 'auto',
+    paddingRight: 'var(--spacing-xs)',
+  };
+
   const summaryCardStyle: React.CSSProperties = {
     backgroundColor: 'var(--color-surface-elevated)',
     borderRadius: 'var(--radius-md)',
     border: '1px solid var(--color-border)',
     padding: 'var(--spacing-md)',
-    marginBottom: 'var(--spacing-md)',
+  };
+
+  const summaryTitleStyle: React.CSSProperties = {
+    fontSize: 'var(--text-xs)',
+    fontWeight: 600,
+    color: 'var(--color-text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    marginBottom: 'var(--spacing-sm)',
   };
 
   const summaryRowStyle: React.CSSProperties = {
@@ -98,26 +202,52 @@ const BoletoConfirmModal = ({
     fontSize: 'var(--text-sm)',
     fontWeight: 500,
     fontFamily: 'var(--font-mono)',
+    color: 'var(--color-text-primary)',
   };
 
-  const tableContainerStyle: React.CSSProperties = {
-    maxHeight: '200px',
-    overflowY: 'auto',
+  const boletoCardStyle: React.CSSProperties = {
+    backgroundColor: 'var(--color-surface-elevated)',
     borderRadius: 'var(--radius-md)',
     border: '1px solid var(--color-border)',
-    marginBottom: 'var(--spacing-md)',
+    padding: 'var(--spacing-md)',
   };
 
-  const inputGroupStyle: React.CSSProperties = {
-    marginBottom: 'var(--spacing-md)',
+  const boletoHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 'var(--spacing-sm)',
+    paddingBottom: 'var(--spacing-sm)',
+    borderBottom: '1px solid var(--color-border-subtle)',
   };
 
-  const inputLabelStyle: React.CSSProperties = {
-    display: 'block',
+  const boletoTitleStyle: React.CSSProperties = {
+    fontSize: 'var(--text-sm)',
+    fontWeight: 600,
+    color: 'var(--color-text-primary)',
+  };
+
+  const boletoInfoStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
+    color: 'var(--color-text-muted)',
+  };
+
+  const fieldGroupStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 'var(--spacing-sm)',
+  };
+
+  const fieldStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.25rem',
+  };
+
+  const fieldLabelStyle: React.CSSProperties = {
+    fontSize: '10px',
     fontWeight: 600,
     color: 'var(--color-text-muted)',
-    marginBottom: '0.375rem',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   };
@@ -126,11 +256,29 @@ const BoletoConfirmModal = ({
     width: '100%',
     padding: '0.5rem 0.75rem',
     fontSize: 'var(--text-sm)',
-    fontFamily: 'var(--font-sans)',
+    fontFamily: 'var(--font-mono)',
     backgroundColor: 'var(--color-surface)',
+    color: 'var(--color-text-primary)',
     border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-md)',
     outline: 'none',
+  };
+
+  const inputErrorStyle: React.CSSProperties = {
+    ...inputStyle,
+    borderColor: 'var(--color-error, #ef4444)',
+  };
+
+  const errorMessageStyle: React.CSSProperties = {
+    fontSize: '10px',
+    color: 'var(--color-error, #ef4444)',
+    marginTop: '0.25rem',
+  };
+
+  const limiteInfoStyle: React.CSSProperties = {
+    fontSize: '10px',
+    color: 'var(--color-text-muted)',
+    marginTop: '0.25rem',
   };
 
   const footerStyle: React.CSSProperties = {
@@ -138,16 +286,17 @@ const BoletoConfirmModal = ({
     justifyContent: 'flex-end',
     gap: 'var(--spacing-sm)',
     paddingTop: 'var(--spacing-md)',
+    marginTop: 'var(--spacing-md)',
     borderTop: '1px solid var(--color-border-subtle)',
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md" showCloseButton={false}>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" showCloseButton={false}>
       <div style={headerStyle}>
         <div>
-          <h2 style={titleStyle}>Confirmar Geracao de Boleto</h2>
+          <h2 style={titleStyle}>Gerar Boletos</h2>
           <p style={subtitleStyle}>
-            {parcelas.length} parcela{parcelas.length > 1 ? 's' : ''} selecionada{parcelas.length > 1 ? 's' : ''}
+            {parcelas.length} boleto{parcelas.length > 1 ? 's' : ''} individual{parcelas.length > 1 ? 'is' : ''}
           </p>
         </div>
         <button
@@ -171,84 +320,111 @@ const BoletoConfirmModal = ({
         </button>
       </div>
 
-      {/* Resumo */}
-      <div style={summaryCardStyle}>
-        <div style={summaryRowStyle}>
-          <span style={labelStyle}>Quantidade de Boletos</span>
-          <span style={valueStyle}>{parcelas.length}</span>
-        </div>
-        <div style={summaryRowStyle}>
-          <span style={labelStyle}>Valor Total</span>
-          <span style={valueStyle}>{formatCurrency(valorTotal)}</span>
-        </div>
-        {descontoTotal > 0 && (
-          <>
+      <div style={contentStyle}>
+        {/* Painel Esquerdo - Resumo */}
+        <div style={leftPanelStyle}>
+          <div style={summaryCardStyle}>
+            <div style={summaryTitleStyle}>Resumo da Negociação</div>
             <div style={summaryRowStyle}>
-              <span style={labelStyle}>Desconto Maximo Disponivel</span>
-              <span style={{ ...valueStyle, color: 'var(--color-success, #10b981)' }}>
-                -{formatCurrency(descontoTotal)}
+              <span style={labelStyle}>Boletos</span>
+              <span style={valueStyle}>{boletos.length}</span>
+            </div>
+            <div style={summaryRowStyle}>
+              <span style={labelStyle}>Valor Original</span>
+              <span style={valueStyle}>{formatCurrency(valorTotalOriginal)}</span>
+            </div>
+            <div style={summaryRowStyle}>
+              <span style={labelStyle}>Valor Negociado</span>
+              <span style={{ ...valueStyle, color: 'var(--color-primary)' }}>
+                {formatCurrency(valorTotalBoletos)}
               </span>
             </div>
-            <div style={{ ...summaryRowStyle, borderBottom: 'none' }}>
-              <span style={labelStyle}>Valor Minimo (com desconto)</span>
-              <span style={{ ...valueStyle, color: 'var(--color-success, #10b981)' }}>
-                {formatCurrency(valorComDesconto)}
-              </span>
+            {descontoAplicado > 0 && (
+              <div style={{ ...summaryRowStyle, borderBottom: 'none' }}>
+                <span style={labelStyle}>Desconto Aplicado</span>
+                <span style={{ ...valueStyle, color: 'var(--color-success, #10b981)' }}>
+                  -{formatCurrency(descontoAplicado)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ ...summaryCardStyle, backgroundColor: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+              <strong style={{ color: 'var(--color-primary)' }}>Dica:</strong> Você pode negociar valores individuais para cada boleto. O valor mínimo permitido é o limite de desconto definido pela política.
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        {/* Painel Direito - Boletos */}
+        <div style={rightPanelStyle}>
+          {boletos.map((boleto, index) => {
+            const parcela = getParcela(boleto.parcelaNumero);
+            if (!parcela) return null;
+
+            return (
+              <div key={boleto.parcelaNumero} style={boletoCardStyle}>
+                <div style={boletoHeaderStyle}>
+                  <span style={boletoTitleStyle}>
+                    Parcela {String(boleto.parcelaNumero).padStart(2, '0')}
+                  </span>
+                  <span style={boletoInfoStyle}>
+                    Venc. original: {formatDate(parcela.dataVencimento)} • {parcela.diasAtraso} dias atraso
+                  </span>
+                </div>
+
+                <div style={fieldGroupStyle}>
+                  <div style={fieldStyle}>
+                    <label style={fieldLabelStyle}>Vencimento do Boleto</label>
+                    <input
+                      type="date"
+                      style={inputStyle}
+                      value={boleto.dataVencimento}
+                      onChange={(e) => handleDataChange(index, e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+
+                  <div style={fieldStyle}>
+                    <label style={fieldLabelStyle}>Valor do Boleto (R$)</label>
+                    <input
+                      type="text"
+                      style={boleto.erro ? inputErrorStyle : inputStyle}
+                      value={boleto.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      onChange={(e) => handleValorChange(index, e.target.value)}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = boleto.erro ? 'var(--color-error, #ef4444)' : 'var(--color-primary)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = boleto.erro ? 'var(--color-error, #ef4444)' : 'var(--color-border)';
+                      }}
+                    />
+                    {boleto.erro ? (
+                      <span style={errorMessageStyle}>{boleto.erro}</span>
+                    ) : (
+                      <span style={limiteInfoStyle}>
+                        Mín: {formatCurrency(boleto.valorMinimo)} | Máx: {formatCurrency(boleto.valorMaximo)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Tabela de parcelas */}
-      <div style={tableContainerStyle}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ backgroundColor: 'var(--color-border-subtle)' }}>
-              <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600 }}>#</th>
-              <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600 }}>Vencimento Original</th>
-              <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600 }}>Valor</th>
-              <th style={{ padding: '0.5rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600 }}>Dias Atraso</th>
-            </tr>
-          </thead>
-          <tbody>
-            {parcelas.map((parcela) => (
-              <tr key={parcela.numero}>
-                <td style={{ padding: '0.5rem', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-                  {String(parcela.numero).padStart(2, '0')}
-                </td>
-                <td style={{ padding: '0.5rem', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-                  {formatDate(parcela.dataVencimento)}
-                </td>
-                <td style={{ padding: '0.5rem', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', textAlign: 'right', borderBottom: '1px solid var(--color-border-subtle)' }}>
-                  {formatCurrency(parcela.valorAtualizado)}
-                </td>
-                <td style={{ padding: '0.5rem', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', textAlign: 'center', borderBottom: '1px solid var(--color-border-subtle)', color: parcela.diasAtraso > 0 ? 'var(--color-criticality-critical-text)' : 'var(--color-text-muted)' }}>
-                  {parcela.diasAtraso > 0 ? parcela.diasAtraso : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Data de vencimento do boleto */}
-      <div style={inputGroupStyle}>
-        <label style={inputLabelStyle}>Data de Vencimento do Boleto</label>
-        <input
-          type="date"
-          style={inputStyle}
-          value={dataVencimento}
-          onChange={(e) => setDataVencimento(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-        />
-      </div>
-
-      {/* Footer com acoes */}
+      {/* Footer */}
       <div style={footerStyle}>
         <Button variant="secondary" size="sm" onClick={onClose} disabled={isGenerating}>
           Cancelar
         </Button>
-        <Button variant="primary" size="sm" onClick={handleConfirm} disabled={isGenerating}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleConfirm}
+          disabled={isGenerating || hasErrors}
+        >
           {isGenerating ? (
             <>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
@@ -264,7 +440,7 @@ const BoletoConfirmModal = ({
                 <line x1="3" y1="9" x2="21" y2="9" />
                 <line x1="9" y1="21" x2="9" y2="9" />
               </svg>
-              Gerar Boleto
+              Gerar {boletos.length} Boleto{boletos.length > 1 ? 's' : ''}
             </>
           )}
         </Button>
