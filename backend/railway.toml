@@ -9,7 +9,7 @@ cd backend && pnpm db:generate && pnpm build
 """
 
 [deploy]
-startCommand = "cd backend && pnpm db:push && node dist/main.js"
+startCommand = "cd backend && pnpm db:generate && pnpm db:push && node dist/main.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
