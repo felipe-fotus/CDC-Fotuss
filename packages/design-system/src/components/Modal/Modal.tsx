@@ -63,8 +63,8 @@ export const Modal = ({
     sm: { maxWidth: '400px', width: '100%' },
     md: { maxWidth: '500px', width: '100%' },
     lg: { maxWidth: '700px', width: '100%' },
-    xl: { maxWidth: '900px', width: '100%' },
-    full: { maxWidth: 'calc(100vw - 2rem)', width: '100%', maxHeight: 'calc(100vh - 2rem)' },
+    xl: { maxWidth: '1000px', width: '100%' },
+    full: { maxWidth: 'calc(100vw - 2rem)', width: '100%', height: 'calc(100vh - 2rem)' },
   };
 
   const modalStyles: React.CSSProperties = {
@@ -73,7 +73,7 @@ export const Modal = ({
     boxShadow: 'var(--shadow-xl)',
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: 'calc(100vh - 4rem)',
+    maxHeight: size === 'full' ? 'none' : 'calc(100vh - 2rem)',
     zIndex: 'var(--z-modal)',
     animation: 'slideUp 200ms ease',
     ...sizeStyles[size],

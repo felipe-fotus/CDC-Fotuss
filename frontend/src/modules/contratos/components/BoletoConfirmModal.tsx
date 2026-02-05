@@ -155,8 +155,8 @@ const BoletoConfirmModal = ({
   const modalContentStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    height: '70vh',
-    maxHeight: '700px',
+    height: 'calc(100vh - 4rem)',
+    minHeight: '500px',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -364,7 +364,7 @@ const BoletoConfirmModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" showCloseButton={false}>
+    <Modal isOpen={isOpen} onClose={onClose} size="full" showCloseButton={false} style={{ maxWidth: '1100px' }}>
       <div style={modalContentStyle}>
         {/* Header */}
         <div style={headerStyle}>
