@@ -8,6 +8,7 @@ interface BoletoConfig {
   parcelaNumero: number;
   dataVencimento: string;
   valor: number;
+  valorInput: string; // texto do input (livre para edição)
   valorMinimo: number;
   valorMaximo: number;
   erro: string | null;
@@ -34,10 +35,23 @@ const BoletoConfirmModal = ({
     return date.toISOString().split('T')[0];
   };
 
+  const formatValorInput = (valor: number) => {
+    return valor.toFixed(2).replace('.', ',');
+  };
+
+  const parseValorInput = (valorStr: string): number => {
+    // Remove tudo exceto números, vírgula e ponto
+    const cleaned = valorStr.replace(/[^\d.,]/g, '');
+    // Substitui vírgula por ponto para parse
+    const normalized = cleaned.replace(',', '.');
+    return parseFloat(normalized) || 0;
+  };
+
   const [boletos, setBoletos] = useState<BoletoConfig[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [boletoUnico, setBoletoUnico] = useState(false);
   const [dataUnica, setDataUnica] = useState(getDefaultDate());
+  const [valorUnicoInput, setValorUnicoInput] = useState('');
   const [valorUnico, setValorUnico] = useState(0);
   const [erroValorUnico, setErroValorUnico] = useState<string | null>(null);
 
@@ -49,13 +63,16 @@ const BoletoConfirmModal = ({
         parcelaNumero: p.numero,
         dataVencimento: defaultDate,
         valor: p.valorAtualizado,
+        valorInput: formatValorInput(p.valorAtualizado),
         valorMinimo: p.limiteDescontoMin,
         valorMaximo: p.valorAtualizado,
         erro: null,
       }));
       setBoletos(boletosIniciais);
       setDataUnica(defaultDate);
-      setValorUnico(parcelas.reduce((acc, p) => acc + p.valorAtualizado, 0));
+      const total = parcelas.reduce((acc, p) => acc + p.valorAtualizado, 0);
+      setValorUnico(total);
+      setValorUnicoInput(formatValorInput(total));
       setErroValorUnico(null);
       setBoletoUnico(false);
     }
@@ -72,23 +89,36 @@ const BoletoConfirmModal = ({
     ? erroValorUnico !== null
     : boletos.some((b) => b.erro !== null);
 
-  const handleValorChange = (index: number, valorStr: string) => {
-    const valor = parseFloat(valorStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+  // Input livre - usuário digita o que quiser
+  const handleValorInputChange = (index: number, valorStr: string) => {
+    setBoletos((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        valorInput: valorStr,
+      };
+      return updated;
+    });
+  };
 
+  // Validação ao sair do campo
+  const handleValorBlur = (index: number) => {
     setBoletos((prev) => {
       const updated = [...prev];
       const boleto = updated[index];
+      const valor = parseValorInput(boleto.valorInput);
 
       if (valor < boleto.valorMinimo) {
         updated[index] = {
           ...boleto,
           valor,
-          erro: `Mínimo: ${formatCurrency(boleto.valorMinimo)}`,
+          erro: `Valor abaixo do mínimo permitido (${formatCurrency(boleto.valorMinimo)})`,
         };
       } else if (valor > boleto.valorMaximo) {
         updated[index] = {
           ...boleto,
           valor: boleto.valorMaximo,
+          valorInput: formatValorInput(boleto.valorMaximo),
           erro: null,
         };
       } else {
@@ -103,14 +133,21 @@ const BoletoConfirmModal = ({
     });
   };
 
-  const handleValorUnicoChange = (valorStr: string) => {
-    const valor = parseFloat(valorStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+  // Input único - livre
+  const handleValorUnicoInputChange = (valorStr: string) => {
+    setValorUnicoInput(valorStr);
+  };
+
+  // Validação ao sair do campo único
+  const handleValorUnicoBlur = () => {
+    const valor = parseValorInput(valorUnicoInput);
     setValorUnico(valor);
 
     if (valor < valorMinimoTotal) {
-      setErroValorUnico(`Mínimo: ${formatCurrency(valorMinimoTotal)}`);
+      setErroValorUnico(`Valor abaixo do mínimo permitido (${formatCurrency(valorMinimoTotal)})`);
     } else if (valor > valorTotalOriginal) {
       setValorUnico(valorTotalOriginal);
+      setValorUnicoInput(formatValorInput(valorTotalOriginal));
       setErroValorUnico(null);
     } else {
       setErroValorUnico(null);
@@ -136,6 +173,7 @@ const BoletoConfirmModal = ({
         parcelaNumero: 0,
         dataVencimento: dataUnica,
         valor: valorUnico,
+        valorInput: valorUnicoInput,
         valorMinimo: valorMinimoTotal,
         valorMaximo: valorTotalOriginal,
         erro: null,
@@ -153,14 +191,15 @@ const BoletoConfirmModal = ({
 
   const getParcela = (numero: number) => parcelas.find((p) => p.numero === numero);
 
-  // Styles
+  // ============ STYLES - Otimizados para Dark Mode ============
+
   const headerStyle: React.CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 'var(--spacing-lg)',
     paddingBottom: 'var(--spacing-md)',
-    borderBottom: '1px solid var(--color-border-subtle)',
+    borderBottom: '1px solid var(--color-border)',
   };
 
   const closeButtonStyle: React.CSSProperties = {
@@ -174,29 +213,29 @@ const BoletoConfirmModal = ({
     border: 'none',
     borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
-    color: 'var(--color-text-secondary)',
+    color: 'var(--color-text-primary)',
     transition: 'all 150ms ease',
     flexShrink: 0,
   };
 
   const titleStyle: React.CSSProperties = {
     fontSize: 'var(--text-xl)',
-    fontWeight: 600,
+    fontWeight: 700,
     color: 'var(--color-text-primary)',
     margin: 0,
   };
 
   const subtitleStyle: React.CSSProperties = {
     fontSize: 'var(--text-sm)',
-    color: 'var(--color-text-muted)',
+    color: 'var(--color-text-secondary)',
     marginTop: '0.5rem',
   };
 
   const contentStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: '320px 1fr',
+    gridTemplateColumns: '340px 1fr',
     gap: 'var(--spacing-xl)',
-    minHeight: '380px',
+    minHeight: '400px',
   };
 
   const leftPanelStyle: React.CSSProperties = {
@@ -209,22 +248,22 @@ const BoletoConfirmModal = ({
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--spacing-md)',
-    maxHeight: '450px',
+    maxHeight: '480px',
     overflowY: 'auto',
     paddingRight: 'var(--spacing-sm)',
   };
 
-  const summaryCardStyle: React.CSSProperties = {
-    backgroundColor: 'var(--color-surface-elevated)',
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: 'var(--color-surface)',
     borderRadius: 'var(--radius-lg)',
     border: '1px solid var(--color-border)',
     padding: 'var(--spacing-lg)',
   };
 
-  const summaryTitleStyle: React.CSSProperties = {
+  const cardTitleStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
-    fontWeight: 600,
-    color: 'var(--color-text-muted)',
+    fontWeight: 700,
+    color: 'var(--color-text-primary)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     marginBottom: 'var(--spacing-md)',
@@ -234,63 +273,63 @@ const BoletoConfirmModal = ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '0.5rem 0',
-    borderBottom: '1px solid var(--color-border-subtle)',
+    padding: '0.625rem 0',
+    borderBottom: '1px solid var(--color-border)',
   };
 
   const labelStyle: React.CSSProperties = {
     fontSize: 'var(--text-sm)',
-    color: 'var(--color-text-muted)',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
   };
 
   const valueStyle: React.CSSProperties = {
     fontSize: 'var(--text-sm)',
-    fontWeight: 600,
+    fontWeight: 700,
     fontFamily: 'var(--font-mono)',
     color: 'var(--color-text-primary)',
   };
 
+  // Toggle Switch - cores fortes para visibilidade
   const toggleCardStyle: React.CSSProperties = {
-    backgroundColor: 'var(--color-surface-elevated)',
-    borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--color-border)',
-    padding: 'var(--spacing-md)',
+    ...cardStyle,
+    backgroundColor: boletoUnico ? 'rgba(59, 130, 246, 0.15)' : 'var(--color-surface)',
+    borderColor: boletoUnico ? 'rgba(59, 130, 246, 0.5)' : 'var(--color-border)',
   };
 
   const toggleRowStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: 'var(--spacing-sm)',
+    gap: 'var(--spacing-md)',
     cursor: 'pointer',
   };
 
   const toggleSwitchStyle: React.CSSProperties = {
     position: 'relative',
-    width: '44px',
-    height: '24px',
-    backgroundColor: boletoUnico ? 'var(--color-primary)' : 'var(--color-border)',
-    borderRadius: '12px',
+    width: '52px',
+    height: '28px',
+    backgroundColor: boletoUnico ? '#3b82f6' : 'var(--color-border)',
+    borderRadius: '14px',
     transition: 'background-color 200ms',
     cursor: 'pointer',
     flexShrink: 0,
+    border: boletoUnico ? '2px solid #3b82f6' : '2px solid var(--color-text-muted)',
   };
 
   const toggleKnobStyle: React.CSSProperties = {
     position: 'absolute',
     top: '2px',
-    left: boletoUnico ? '22px' : '2px',
+    left: boletoUnico ? '24px' : '2px',
     width: '20px',
     height: '20px',
     backgroundColor: 'white',
     borderRadius: '50%',
     transition: 'left 200ms',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
   };
 
   const boletoCardStyle: React.CSSProperties = {
-    backgroundColor: 'var(--color-surface-elevated)',
-    borderRadius: 'var(--radius-lg)',
-    border: '1px solid var(--color-border)',
+    ...cardStyle,
     padding: 'var(--spacing-lg)',
   };
 
@@ -300,28 +339,30 @@ const BoletoConfirmModal = ({
     alignItems: 'center',
     marginBottom: 'var(--spacing-md)',
     paddingBottom: 'var(--spacing-sm)',
-    borderBottom: '1px solid var(--color-border-subtle)',
+    borderBottom: '1px solid var(--color-border)',
   };
 
   const boletoTitleStyle: React.CSSProperties = {
     fontSize: 'var(--text-base)',
-    fontWeight: 600,
+    fontWeight: 700,
     color: 'var(--color-text-primary)',
   };
 
   const boletoInfoStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
-    color: 'var(--color-text-muted)',
+    fontWeight: 500,
+    color: 'var(--color-text-secondary)',
   };
 
+  // Faixa de valores com cores fortes
   const valorRangeStyle: React.CSSProperties = {
     display: 'flex',
     gap: 'var(--spacing-md)',
-    marginBottom: 'var(--spacing-md)',
+    marginBottom: 'var(--spacing-lg)',
     padding: 'var(--spacing-md)',
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     borderRadius: 'var(--radius-md)',
-    border: '1px solid rgba(59, 130, 246, 0.2)',
+    border: '2px solid rgba(59, 130, 246, 0.3)',
   };
 
   const valorRangeItemStyle: React.CSSProperties = {
@@ -330,19 +371,26 @@ const BoletoConfirmModal = ({
   };
 
   const valorRangeLabelStyle: React.CSSProperties = {
-    fontSize: '10px',
-    fontWeight: 600,
-    color: 'var(--color-text-muted)',
+    fontSize: 'var(--text-xs)',
+    fontWeight: 700,
+    color: 'var(--color-text-primary)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    marginBottom: '4px',
+    marginBottom: '6px',
   };
 
-  const valorRangeValueStyle: React.CSSProperties = {
+  const valorMinStyle: React.CSSProperties = {
     fontSize: 'var(--text-lg)',
-    fontWeight: 700,
+    fontWeight: 800,
     fontFamily: 'var(--font-mono)',
-    color: 'var(--color-primary)',
+    color: '#10b981',
+  };
+
+  const valorMaxStyle: React.CSSProperties = {
+    fontSize: 'var(--text-lg)',
+    fontWeight: 800,
+    fontFamily: 'var(--font-mono)',
+    color: '#3b82f6',
   };
 
   const fieldGroupStyle: React.CSSProperties = {
@@ -354,39 +402,55 @@ const BoletoConfirmModal = ({
   const fieldStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: '8px',
   };
 
   const fieldLabelStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
-    fontWeight: 600,
-    color: 'var(--color-text-muted)',
+    fontWeight: 700,
+    color: 'var(--color-text-primary)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   };
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    padding: '0.625rem 0.875rem',
+    padding: '0.75rem 1rem',
     fontSize: 'var(--text-sm)',
     fontFamily: 'var(--font-mono)',
-    backgroundColor: 'var(--color-surface)',
+    fontWeight: 600,
+    backgroundColor: 'var(--color-bg)',
     color: 'var(--color-text-primary)',
-    border: '1px solid var(--color-border)',
+    border: '2px solid var(--color-border)',
     borderRadius: 'var(--radius-md)',
     outline: 'none',
+    transition: 'border-color 150ms, box-shadow 150ms',
   };
 
   const inputErrorStyle: React.CSSProperties = {
     ...inputStyle,
-    borderColor: 'var(--color-error, #ef4444)',
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    borderColor: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   };
 
   const errorMessageStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)',
-    color: 'var(--color-error, #ef4444)',
+    fontWeight: 600,
+    color: '#ef4444',
+  };
+
+  const tipCardStyle: React.CSSProperties = {
+    padding: 'var(--spacing-md)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 'var(--radius-lg)',
+    border: '1px solid rgba(59, 130, 246, 0.3)',
+  };
+
+  const tipTextStyle: React.CSSProperties = {
+    fontSize: 'var(--text-xs)',
     fontWeight: 500,
+    color: 'var(--color-text-primary)',
+    lineHeight: 1.6,
   };
 
   const footerStyle: React.CSSProperties = {
@@ -395,7 +459,7 @@ const BoletoConfirmModal = ({
     gap: 'var(--spacing-sm)',
     paddingTop: 'var(--spacing-lg)',
     marginTop: 'var(--spacing-lg)',
-    borderTop: '1px solid var(--color-border-subtle)',
+    borderTop: '1px solid var(--color-border)',
   };
 
   return (
@@ -413,15 +477,13 @@ const BoletoConfirmModal = ({
           onClick={onClose}
           aria-label="Fechar"
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-border-subtle)';
-            e.currentTarget.style.color = 'var(--color-text-primary)';
+            e.currentTarget.style.backgroundColor = 'var(--color-border)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = 'var(--color-text-secondary)';
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -439,11 +501,11 @@ const BoletoConfirmModal = ({
                   <div style={toggleKnobStyle} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                     Boleto Único
                   </div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                    Consolidar todas as parcelas em um único boleto
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                    Consolidar em um único boleto
                   </div>
                 </div>
               </label>
@@ -451,8 +513,8 @@ const BoletoConfirmModal = ({
           )}
 
           {/* Resumo */}
-          <div style={summaryCardStyle}>
-            <div style={summaryTitleStyle}>Resumo da Negociação</div>
+          <div style={cardStyle}>
+            <div style={cardTitleStyle}>Resumo da Negociação</div>
             <div style={summaryRowStyle}>
               <span style={labelStyle}>Quantidade</span>
               <span style={valueStyle}>{boletoUnico ? '1 boleto' : `${boletos.length} boletos`}</span>
@@ -463,14 +525,14 @@ const BoletoConfirmModal = ({
             </div>
             <div style={summaryRowStyle}>
               <span style={labelStyle}>Valor Negociado</span>
-              <span style={{ ...valueStyle, color: 'var(--color-primary)', fontSize: 'var(--text-base)' }}>
+              <span style={{ ...valueStyle, color: '#3b82f6', fontSize: 'var(--text-base)' }}>
                 {formatCurrency(valorTotalBoletos)}
               </span>
             </div>
             {descontoAplicado > 0 && (
               <div style={{ ...summaryRowStyle, borderBottom: 'none' }}>
                 <span style={labelStyle}>Desconto</span>
-                <span style={{ ...valueStyle, color: 'var(--color-success, #10b981)' }}>
+                <span style={{ ...valueStyle, color: '#10b981' }}>
                   -{formatCurrency(descontoAplicado)} ({((descontoAplicado / valorTotalOriginal) * 100).toFixed(1)}%)
                 </span>
               </div>
@@ -478,11 +540,11 @@ const BoletoConfirmModal = ({
           </div>
 
           {/* Dica */}
-          <div style={{ padding: 'var(--spacing-md)', backgroundColor: 'rgba(59, 130, 246, 0.05)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(59, 130, 246, 0.15)' }}>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-              <strong style={{ color: 'var(--color-primary)' }}>💡 Dica de negociação:</strong>
+          <div style={tipCardStyle}>
+            <div style={tipTextStyle}>
+              <strong style={{ color: '#3b82f6' }}>💡 Dica:</strong>
               <br />
-              O valor mínimo é o limite de desconto permitido pela política. Negocie valores dentro da faixa para fechar acordos.
+              Digite o valor desejado no campo. A validação ocorre ao sair do campo. O valor mínimo é o limite de desconto permitido.
             </div>
           </div>
         </div>
@@ -497,26 +559,22 @@ const BoletoConfirmModal = ({
                 <span style={boletoInfoStyle}>{parcelas.length} parcelas</span>
               </div>
 
-              {/* Faixa de Valores com Destaque */}
+              {/* Faixa de Valores */}
               <div style={valorRangeStyle}>
                 <div style={valorRangeItemStyle}>
                   <div style={valorRangeLabelStyle}>Valor Mínimo</div>
-                  <div style={{ ...valorRangeValueStyle, color: 'var(--color-success, #10b981)' }}>
-                    {formatCurrency(valorMinimoTotal)}
-                  </div>
+                  <div style={valorMinStyle}>{formatCurrency(valorMinimoTotal)}</div>
                 </div>
-                <div style={{ width: '1px', backgroundColor: 'rgba(59, 130, 246, 0.3)' }} />
+                <div style={{ width: '2px', backgroundColor: 'rgba(59, 130, 246, 0.3)' }} />
                 <div style={valorRangeItemStyle}>
                   <div style={valorRangeLabelStyle}>Valor Máximo</div>
-                  <div style={valorRangeValueStyle}>
-                    {formatCurrency(valorTotalOriginal)}
-                  </div>
+                  <div style={valorMaxStyle}>{formatCurrency(valorTotalOriginal)}</div>
                 </div>
               </div>
 
               <div style={fieldGroupStyle}>
                 <div style={fieldStyle}>
-                  <label style={fieldLabelStyle}>Vencimento do Boleto</label>
+                  <label style={fieldLabelStyle}>Vencimento</label>
                   <input
                     type="date"
                     style={inputStyle}
@@ -527,18 +585,18 @@ const BoletoConfirmModal = ({
                 </div>
 
                 <div style={fieldStyle}>
-                  <label style={fieldLabelStyle}>Valor do Boleto (R$)</label>
+                  <label style={fieldLabelStyle}>Valor (R$)</label>
                   <input
                     type="text"
                     style={erroValorUnico ? inputErrorStyle : inputStyle}
-                    value={valorUnico.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    onChange={(e) => handleValorUnicoChange(e.target.value)}
+                    value={valorUnicoInput}
+                    onChange={(e) => handleValorUnicoInputChange(e.target.value)}
+                    onBlur={handleValorUnicoBlur}
                     onFocus={(e) => {
-                      e.target.style.borderColor = erroValorUnico ? 'var(--color-error, #ef4444)' : 'var(--color-primary)';
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.2)';
                     }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = erroValorUnico ? 'var(--color-error, #ef4444)' : 'var(--color-border)';
-                    }}
+                    placeholder="0,00"
                   />
                   {erroValorUnico && <span style={errorMessageStyle}>{erroValorUnico}</span>}
                 </div>
@@ -557,30 +615,26 @@ const BoletoConfirmModal = ({
                       Parcela {String(boleto.parcelaNumero).padStart(2, '0')}
                     </span>
                     <span style={boletoInfoStyle}>
-                      Venc. original: {formatDate(parcela.dataVencimento)} • {parcela.diasAtraso}d atraso
+                      Venc: {formatDate(parcela.dataVencimento)} • {parcela.diasAtraso}d atraso
                     </span>
                   </div>
 
-                  {/* Faixa de Valores com Destaque */}
+                  {/* Faixa de Valores */}
                   <div style={valorRangeStyle}>
                     <div style={valorRangeItemStyle}>
                       <div style={valorRangeLabelStyle}>Valor Mínimo</div>
-                      <div style={{ ...valorRangeValueStyle, color: 'var(--color-success, #10b981)' }}>
-                        {formatCurrency(boleto.valorMinimo)}
-                      </div>
+                      <div style={valorMinStyle}>{formatCurrency(boleto.valorMinimo)}</div>
                     </div>
-                    <div style={{ width: '1px', backgroundColor: 'rgba(59, 130, 246, 0.3)' }} />
+                    <div style={{ width: '2px', backgroundColor: 'rgba(59, 130, 246, 0.3)' }} />
                     <div style={valorRangeItemStyle}>
                       <div style={valorRangeLabelStyle}>Valor Máximo</div>
-                      <div style={valorRangeValueStyle}>
-                        {formatCurrency(boleto.valorMaximo)}
-                      </div>
+                      <div style={valorMaxStyle}>{formatCurrency(boleto.valorMaximo)}</div>
                     </div>
                   </div>
 
                   <div style={fieldGroupStyle}>
                     <div style={fieldStyle}>
-                      <label style={fieldLabelStyle}>Vencimento do Boleto</label>
+                      <label style={fieldLabelStyle}>Vencimento</label>
                       <input
                         type="date"
                         style={inputStyle}
@@ -591,18 +645,18 @@ const BoletoConfirmModal = ({
                     </div>
 
                     <div style={fieldStyle}>
-                      <label style={fieldLabelStyle}>Valor do Boleto (R$)</label>
+                      <label style={fieldLabelStyle}>Valor (R$)</label>
                       <input
                         type="text"
                         style={boleto.erro ? inputErrorStyle : inputStyle}
-                        value={boleto.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        onChange={(e) => handleValorChange(index, e.target.value)}
+                        value={boleto.valorInput}
+                        onChange={(e) => handleValorInputChange(index, e.target.value)}
+                        onBlur={() => handleValorBlur(index)}
                         onFocus={(e) => {
-                          e.target.style.borderColor = boleto.erro ? 'var(--color-error, #ef4444)' : 'var(--color-primary)';
+                          e.target.style.borderColor = '#3b82f6';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.2)';
                         }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = boleto.erro ? 'var(--color-error, #ef4444)' : 'var(--color-border)';
-                        }}
+                        placeholder="0,00"
                       />
                       {boleto.erro && <span style={errorMessageStyle}>{boleto.erro}</span>}
                     </div>
