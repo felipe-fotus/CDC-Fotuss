@@ -5,11 +5,11 @@ corepack enable && \
 corepack prepare pnpm@9.15.0 --activate && \
 pnpm install && \
 pnpm --filter @cdc-fotus/types build && \
-cd backend && pnpm db:generate && pnpm build
+cd backend && pnpm build
 """
 
 [deploy]
-startCommand = "cd backend && pnpm db:generate && pnpm db:push && node dist/main.js"
+startCommand = "cd backend && pnpm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"

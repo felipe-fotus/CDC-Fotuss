@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/main.ts",
     "build": "tsup src/main.ts --format esm --dts",
-    "start": "node dist/main.js",
+    "start": "prisma generate && prisma db push && node dist/main.js",
     "lint": "eslint src/",
     "test": "vitest",
     "test:cov": "vitest --coverage",
