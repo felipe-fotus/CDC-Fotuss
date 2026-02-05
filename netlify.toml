@@ -1,0 +1,9 @@
+[build]
+  base = "/"
+  command = "pnpm install && pnpm --filter @cdc-fotus/types build && pnpm --filter @cdc-fotus/design-system build && pnpm --filter @cdc-fotus/frontend build"
+  publish = "frontend/dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
