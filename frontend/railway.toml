@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = """
 corepack enable && \
 corepack prepare pnpm@9.15.0 --activate && \
-pnpm install --frozen-lockfile && \
+pnpm install && \
 pnpm --filter @cdc-fotus/types build && \
 pnpm --filter @cdc-fotus/design-system build && \
 cd frontend && pnpm build
