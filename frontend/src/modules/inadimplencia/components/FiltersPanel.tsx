@@ -252,7 +252,7 @@ const FiltersPanel = ({
               {FAIXAS_ATRASO.map((faixa) => (
                 <Chip
                   key={faixa}
-                  label={String(faixa)}
+                  label={`D+${faixa}`}
                   isActive={filters.faixasAtraso.includes(faixa)}
                   onClick={() => onToggleFaixa(faixa)}
                 />

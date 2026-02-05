@@ -46,12 +46,6 @@ export function useContracts(
     loadContracts();
   }, [loadContracts]);
 
-  // Metricas calculadas sobre TODOS os contratos (nao filtrados)
-  const metrics = useMemo(() => {
-    if (contracts.length === 0) return emptyMetrics;
-    return calculateMetrics(contracts);
-  }, [contracts]);
-
   const filteredContracts = useMemo(() => {
     let result = [...contracts];
 
@@ -115,6 +109,12 @@ export function useContracts(
 
     return result;
   }, [contracts, filters, sorting]);
+
+  // Metricas calculadas sobre os contratos filtrados
+  const metrics = useMemo(() => {
+    if (filteredContracts.length === 0) return emptyMetrics;
+    return calculateMetrics(filteredContracts);
+  }, [filteredContracts]);
 
   const tratadosCount = useMemo(() => contracts.filter(c => c.tratado).length, [contracts]);
   const pendentesCount = useMemo(() => contracts.filter(c => !c.tratado).length, [contracts]);

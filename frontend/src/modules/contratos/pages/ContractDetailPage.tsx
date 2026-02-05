@@ -620,7 +620,6 @@ const ContractDetailPage = () => {
               <InfoItem label="Entrada" value={formatCurrency(contract.valorEntrada)} mono />
               <InfoItem label="Parcelas" value={`${contract.quantidadeParcelas}x`} />
               <InfoItem label="Taxa" value={`${contract.taxaJuros.toFixed(2)}% a.m.`} />
-              <InfoItem label="Origem" value={contract.origemContrato} />
             </SidebarCard>
 
             {/* Dados do Cliente - com botao de copiar */}
@@ -778,7 +777,7 @@ const ContractDetailPage = () => {
                       <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Pagamento</th>
                       <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Original</th>
                       <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Atualizado</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }} title="Valor minimo com desconto aplicado">Limite Cob.</th>
+                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }} title="Valor minimo com desconto aplicado">Limite Desconto</th>
                       <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Status</th>
                       <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Atraso</th>
                     </tr>
