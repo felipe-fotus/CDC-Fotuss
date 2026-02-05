@@ -113,3 +113,28 @@ export interface ContractSorting {
 // === CRITICIDADE ===
 
 export type CriticalityLevel = 'low' | 'medium' | 'high' | 'critical';
+
+// === LINHA DO TEMPO ===
+
+export type TimelineEventType =
+  | 'contrato_criado'
+  | 'parcela_paga'
+  | 'parcela_vencida'
+  | 'anotacao'
+  | 'boleto_gerado';
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  date: string;
+  title: string;
+  description?: string;
+  author?: string;
+  metadata?: {
+    parcelaNumero?: number;
+    valor?: number;
+    valorPago?: number;
+    diasAtraso?: number;
+    tipoContato?: string;
+  };
+}

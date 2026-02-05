@@ -231,7 +231,7 @@ const FiltersPanel = ({
             <Input
               placeholder="Nome ou CPF/CNPJ..."
               value={clienteBusca}
-              onChange={(e) => setClienteBusca(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClienteBusca(e.target.value)}
               style={{ fontSize: 'var(--text-sm)' }}
             />
           </div>
@@ -241,7 +241,7 @@ const FiltersPanel = ({
             <Input
               placeholder="Nome ou CNPJ..."
               value={integradorBusca}
-              onChange={(e) => setIntegradorBusca(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIntegradorBusca(e.target.value)}
               style={{ fontSize: 'var(--text-sm)' }}
             />
           </div>

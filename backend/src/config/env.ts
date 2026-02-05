@@ -7,7 +7,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/cdc_fotus'),
   REDIS_URL: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  CORS_ORIGIN: z.string().default('*'),
 });
 
 export const env = envSchema.parse(process.env);

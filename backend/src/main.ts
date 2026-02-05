@@ -28,7 +28,7 @@ async function bootstrap() {
     logger.info(`Server running on http://${env.HOST}:${env.PORT}`);
     logger.info(`Environment: ${env.NODE_ENV}`);
   } catch (err) {
-    logger.error('Failed to start server:', err);
+    logger.error({ err }, 'Failed to start server');
     process.exit(1);
   }
 }

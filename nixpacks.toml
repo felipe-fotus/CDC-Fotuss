@@ -1,0 +1,10 @@
+# Nixpacks configuration for Railway monorepo
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = ["corepack enable", "corepack prepare pnpm@9.15.0 --activate", "pnpm install --frozen-lockfile"]
+
+[start]
+cmd = "echo 'Use service-specific railway.toml'"

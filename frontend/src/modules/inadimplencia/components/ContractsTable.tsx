@@ -92,7 +92,7 @@ const ContractsTable = ({ contracts, isLoading, onOpenAnotacoes }: ContractsTabl
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead style={{ width: '50px' }}></TableHead>
+            <TableHead style={{ width: '50px' }}>{' '}</TableHead>
             <TableHead style={{ minWidth: '140px' }}>ID Contrato</TableHead>
             <TableHead style={{ minWidth: '180px' }}>Cliente Pagante</TableHead>
             <TableHead style={{ minWidth: '150px' }}>Integrador</TableHead>

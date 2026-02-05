@@ -15,12 +15,10 @@ import {
   Spinner,
   LoadingOverlay,
   Container,
-  Stack,
   HStack,
   VStack,
   Grid,
   Divider,
-  Spacer,
   Table,
   TableHeader,
   TableBody,
@@ -55,12 +53,6 @@ export default function DesignSystemShowcase() {
     fontWeight: 600,
     color: 'var(--color-text-primary)',
     marginBottom: 'var(--spacing-4)',
-  };
-
-  const labelStyles: React.CSSProperties = {
-    fontSize: 'var(--text-sm)',
-    color: 'var(--color-text-secondary)',
-    marginBottom: 'var(--spacing-2)',
   };
 
   return (
@@ -108,7 +100,7 @@ export default function DesignSystemShowcase() {
             label="Default Input"
             placeholder="Digite algo..."
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
           />
           <Input
             label="Com Helper Text"
@@ -132,7 +124,7 @@ export default function DesignSystemShowcase() {
             label="Default Select"
             placeholder="Selecione uma opção"
             value={selectValue}
-            onChange={(e) => setSelectValue(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectValue(e.target.value)}
             options={[
               { value: '1', label: 'Opção 1' },
               { value: '2', label: 'Opção 2' },
