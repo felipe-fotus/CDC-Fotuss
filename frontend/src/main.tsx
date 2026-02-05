@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider } from '@cdc-fotus/design-system';
 import { router } from './app/routes';
 import './styles/globals.css';
 
