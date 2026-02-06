@@ -52,6 +52,10 @@ coverage/
 # Docker
 .docker/
 
+# Claude
+CLAUDE.md
+.claude/
+
 # Prisma
 prisma/migrations/.migration_lock.toml
 
