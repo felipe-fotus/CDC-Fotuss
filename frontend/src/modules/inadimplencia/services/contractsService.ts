@@ -1,4 +1,4 @@
-import type { Contract, ContractDetail, Cliente, Parcela, ParcelaStatus, InadimplenciaMetrics, Anotacao } from '../types/contract';
+import type { Contract, ContractDetail, Cliente, Parcela, ParcelaStatus, InadimplenciaMetrics, Anotacao, TimelineEvent, TimelineEventType } from '../types/contract';
 import { generateDueDateFromDaysOverdue } from '../../../lib/dates';
 
 // === DADOS DE MOCK ===
@@ -372,4 +372,217 @@ export async function marcarComoTratado(contratoId: string, tratado: boolean): P
 
 export function getStatusTratamento(contratoId: string): boolean {
   return mockTratadoCache.get(contratoId) || false;
+}
+
+// === GERADOR DE TIMELINE EVENTS ===
+
+const analistas = ['Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa', 'Fernanda Lima'];
+const tiposContato = ['Ligação', 'WhatsApp', 'E-mail', 'SMS'];
+const resultadosContato = [
+  'Cliente atendeu, prometeu pagamento',
+  'Cliente não atendeu',
+  'Deixado recado na caixa postal',
+  'Número inexistente',
+  'Cliente solicitou prazo',
+  'E-mail enviado com sucesso',
+  'Mensagem visualizada sem resposta',
+];
+
+function generateTimelineEvents(contract: ContractDetail): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  let eventId = 1;
+
+  const parcelasEmAtraso = contract.parcelas
+    .filter(p => p.status === 'em_atraso')
+    .sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime());
+
+  const parcelasPagas = contract.parcelas
+    .filter(p => p.status === 'paga' && p.dataPagamento)
+    .sort((a, b) => new Date(a.dataPagamento!).getTime() - new Date(b.dataPagamento!).getTime());
+
+  // 1. Início da inadimplência (primeira parcela em atraso)
+  if (parcelasEmAtraso.length > 0) {
+    const primeiraParcela = parcelasEmAtraso[0];
+    events.push({
+      id: `TL-${contract.id}-${eventId++}`,
+      type: 'inicio_inadimplencia',
+      date: primeiraParcela.dataVencimento,
+      title: 'Início da inadimplência',
+      description: `Parcela ${primeiraParcela.numero} venceu em ${primeiraParcela.dataVencimento} sem pagamento registrado.`,
+      author: 'Sistema',
+      metadata: {
+        parcelaNumero: primeiraParcela.numero,
+        valor: primeiraParcela.valorOriginal,
+        diasAtraso: primeiraParcela.diasAtraso,
+      },
+    });
+  }
+
+  // 2. Mudanças de faixa de atraso (D+60, D+90, D+120...)
+  if (parcelasEmAtraso.length > 0) {
+    const primeiraParcela = parcelasEmAtraso[0];
+    const dataVenc = new Date(primeiraParcela.dataVencimento);
+    const faixas = [60, 90, 120, 150, 180, 360];
+
+    for (const faixa of faixas) {
+      if (primeiraParcela.diasAtraso >= faixa) {
+        const dataFaixa = new Date(dataVenc);
+        dataFaixa.setDate(dataFaixa.getDate() + faixa);
+        const faixaAnterior = faixas[faixas.indexOf(faixa) - 1] || 0;
+
+        events.push({
+          id: `TL-${contract.id}-${eventId++}`,
+          type: 'mudanca_faixa_atraso',
+          date: dataFaixa.toISOString().split('T')[0],
+          title: `Mudança para faixa D+${faixa}`,
+          description: `Contrato atingiu ${faixa} dias de atraso.`,
+          author: 'Sistema',
+          metadata: {
+            faixaAnterior,
+            faixaAtual: faixa,
+            diasAtraso: faixa,
+          },
+        });
+      }
+    }
+  }
+
+  // 3. Mudança de responsabilidade (se atraso >= 90 dias, 40% de chance)
+  if (parcelasEmAtraso.length > 0 && parcelasEmAtraso[0].diasAtraso >= 90) {
+    const dataVenc = new Date(parcelasEmAtraso[0].dataVencimento);
+    const diasParaMudanca = getRandomInRange(70, 85);
+    const dataMudanca = new Date(dataVenc);
+    dataMudanca.setDate(dataMudanca.getDate() + diasParaMudanca);
+
+    if (Math.random() < 0.4) {
+      events.push({
+        id: `TL-${contract.id}-${eventId++}`,
+        type: 'mudanca_responsabilidade',
+        date: dataMudanca.toISOString().split('T')[0],
+        title: 'Recompra do contrato',
+        description: 'Contrato recomprado pela Fotus antes dos 90 dias.',
+        author: getRandomFromArray(analistas),
+        metadata: {
+          responsavelAnterior: contract.integrador,
+          responsavelAtual: 'Fotus',
+        },
+      });
+    }
+  }
+
+  // 4. Pagamentos de parcelas
+  for (const parcela of parcelasPagas) {
+    events.push({
+      id: `TL-${contract.id}-${eventId++}`,
+      type: 'parcela_paga',
+      date: parcela.dataPagamento!,
+      title: `Pagamento da parcela ${parcela.numero}`,
+      description: `Valor pago: R$ ${(parcela.valorPago || parcela.valorOriginal).toFixed(2).replace('.', ',')}`,
+      author: 'Sistema',
+      metadata: {
+        parcelaNumero: parcela.numero,
+        valor: parcela.valorOriginal,
+        valorPago: parcela.valorPago,
+      },
+    });
+  }
+
+  // 5. Pagamento parcial (30% de chance para contratos com atraso > 60 dias)
+  if (parcelasEmAtraso.length > 0 && parcelasEmAtraso[0].diasAtraso > 60 && Math.random() < 0.3) {
+    const dataVenc = new Date(parcelasEmAtraso[0].dataVencimento);
+    const diasAposvenc = getRandomInRange(30, 50);
+    const dataPagParcial = new Date(dataVenc);
+    dataPagParcial.setDate(dataPagParcial.getDate() + diasAposvenc);
+    const valorParcial = Math.round(parcelasEmAtraso[0].valorOriginal * getRandomInRange(20, 60) / 100);
+
+    events.push({
+      id: `TL-${contract.id}-${eventId++}`,
+      type: 'pagamento_parcial',
+      date: dataPagParcial.toISOString().split('T')[0],
+      title: 'Pagamento parcial recebido',
+      description: `Valor parcial de R$ ${valorParcial.toFixed(2).replace('.', ',')} recebido.`,
+      author: 'Sistema',
+      metadata: {
+        valor: parcelasEmAtraso[0].valorOriginal,
+        valorPago: valorParcial,
+        parcelaNumero: parcelasEmAtraso[0].numero,
+      },
+    });
+  }
+
+  // 6. Ações de cobrança (1-4 ações para contratos tratados ou aleatoriamente)
+  const isTratado = mockTratadoCache.get(contract.id) || false;
+  const numAcoes = isTratado ? getRandomInRange(1, 4) : (Math.random() < 0.5 ? getRandomInRange(1, 2) : 0);
+
+  if (parcelasEmAtraso.length > 0) {
+    const dataVenc = new Date(parcelasEmAtraso[0].dataVencimento);
+
+    for (let i = 0; i < numAcoes; i++) {
+      const diasAposVenc = getRandomInRange(5 + i * 15, 20 + i * 20);
+      const dataAcao = new Date(dataVenc);
+      dataAcao.setDate(dataAcao.getDate() + diasAposVenc);
+      const tipoContato = getRandomFromArray(tiposContato);
+      const resultado = getRandomFromArray(resultadosContato);
+
+      events.push({
+        id: `TL-${contract.id}-${eventId++}`,
+        type: 'acao_cobranca',
+        date: dataAcao.toISOString().split('T')[0],
+        title: `Ação de cobrança - ${tipoContato}`,
+        description: resultado,
+        author: getRandomFromArray(analistas),
+        metadata: {
+          tipoContato,
+          resultadoContato: resultado,
+        },
+      });
+    }
+  }
+
+  // 7. Boletos gerados (1-2 para alguns contratos)
+  if (parcelasEmAtraso.length > 0 && Math.random() < 0.4) {
+    const numBoletos = getRandomInRange(1, 2);
+    const dataVenc = new Date(parcelasEmAtraso[0].dataVencimento);
+
+    for (let i = 0; i < numBoletos; i++) {
+      const diasAposVenc = getRandomInRange(10 + i * 30, 30 + i * 30);
+      const dataBoleto = new Date(dataVenc);
+      dataBoleto.setDate(dataBoleto.getDate() + diasAposVenc);
+
+      events.push({
+        id: `TL-${contract.id}-${eventId++}`,
+        type: 'boleto_gerado',
+        date: dataBoleto.toISOString().split('T')[0],
+        title: `Boleto gerado`,
+        description: `Boleto gerado para parcela(s) em atraso.`,
+        author: getRandomFromArray(analistas),
+        metadata: {
+          valor: parcelasEmAtraso.reduce((acc, p) => acc + p.valorAtualizado, 0),
+        },
+      });
+    }
+  }
+
+  // Ordenar cronologicamente (mais antigo primeiro)
+  events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  return events;
+}
+
+// Cache de timeline
+const mockTimelineCache: Map<string, TimelineEvent[]> = new Map();
+
+export async function fetchTimelineEvents(contratoId: string): Promise<TimelineEvent[]> {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  if (mockTimelineCache.has(contratoId)) {
+    return mockTimelineCache.get(contratoId)!;
+  }
+
+  const contract = getMockContractsDetail().find(c => c.id === contratoId);
+  if (!contract) return [];
+
+  const events = generateTimelineEvents(contract);
+  mockTimelineCache.set(contratoId, events);
+  return events;
 }

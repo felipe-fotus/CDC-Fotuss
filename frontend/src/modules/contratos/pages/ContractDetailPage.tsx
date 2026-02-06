@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ContractDetail, Parcela } from '../../inadimplencia/types/contract';
-import { fetchContractById, fetchAnotacoes, getStatusTratamento } from '../../inadimplencia/services/contractsService';
+import type { ContractDetail, Parcela, TimelineEvent } from '../../inadimplencia/types/contract';
+import { fetchContractById, fetchAnotacoes, getStatusTratamento, fetchTimelineEvents } from '../../inadimplencia/services/contractsService';
 import { formatCurrency, formatDate, formatDaysOverdue } from '../../inadimplencia/utils/formatters';
 import { getCriticalityLevel } from '../../inadimplencia/utils/criticality';
 import { Button, Badge } from '@cdc-fotus/design-system';
 import AnotacoesModal from '../../inadimplencia/components/AnotacoesModal';
 import BoletoConfirmModal from '../components/BoletoConfirmModal';
+import Timeline from '../components/Timeline';
+import TimelineEventDrawer from '../components/TimelineEventDrawer';
 
 // === SIDEBAR CARD COM BOTAO DE COPIAR ===
 
@@ -117,34 +119,94 @@ const InfoItem = ({
   value,
   mono,
   highlight,
+  copyable,
 }: {
   label: string;
   value: string | number;
   mono?: boolean;
   highlight?: boolean;
-}) => (
-  <div
-    style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '0.375rem 0',
-      borderBottom: '1px solid var(--color-border-subtle)',
-    }}
-  >
-    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{label}</span>
-    <span
+  copyable?: boolean;
+}) => {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(String(value));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      console.error('Falha ao copiar');
+    }
+  };
+
+  return (
+    <div
       style={{
-        fontSize: 'var(--text-xs)',
-        fontWeight: highlight ? 600 : 500,
-        fontFamily: mono ? 'var(--font-mono)' : 'inherit',
-        color: highlight ? 'var(--color-criticality-critical-text)' : 'var(--color-text-primary)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0.375rem 0',
+        borderBottom: '1px solid var(--color-border-subtle)',
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      {value}
-    </span>
-  </div>
-);
+      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', flexShrink: 0 }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
+        {copyable && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            title={copied ? 'Copiado!' : `Copiar ${label.toLowerCase()}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '18px',
+              height: '18px',
+              padding: 0,
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              backgroundColor: copied ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+              color: copied ? '#10b981' : 'var(--color-text-muted)',
+              cursor: 'pointer',
+              opacity: hovered || copied ? 1 : 0,
+              transition: 'opacity 150ms ease',
+              flexShrink: 0,
+            }}
+          >
+            {copied ? (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            )}
+          </button>
+        )}
+        <span
+          style={{
+            fontSize: 'var(--text-xs)',
+            fontWeight: highlight ? 600 : 500,
+            fontFamily: mono ? 'var(--font-mono)' : 'inherit',
+            color: highlight ? 'var(--color-criticality-critical-text)' : 'var(--color-text-primary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={String(value)}
+        >
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 // === PARCELA ROW ===
 
@@ -309,6 +371,10 @@ const ContractDetailPage = () => {
   const [anotacoesCount, setAnotacoesCount] = useState(0);
   const [tratado, setTratado] = useState(false);
   const [selectedParcelas, setSelectedParcelas] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<'parcelas' | 'timeline'>('parcelas');
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [isTimelineLoading, setIsTimelineLoading] = useState(false);
+  const [selectedTimelineEvent, setSelectedTimelineEvent] = useState<TimelineEvent | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -344,6 +410,16 @@ const ContractDetailPage = () => {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'timeline' && id && timelineEvents.length === 0) {
+      setIsTimelineLoading(true);
+      fetchTimelineEvents(id).then(events => {
+        setTimelineEvents(events);
+        setIsTimelineLoading(false);
+      });
+    }
+  }, [activeTab, id, timelineEvents.length]);
 
   const handleBack = () => navigate('/inadimplencia');
 
@@ -411,22 +487,6 @@ const ContractDetailPage = () => {
   const parcelasEmAtraso = contract.parcelas.filter((p) => p.status === 'em_atraso');
   const parcelasAVencer = contract.parcelas.filter((p) => p.status === 'a_vencer');
 
-  // Dados para copiar - Cliente
-  const clienteCopyData = [
-    `Nome: ${contract.cliente.nome}`,
-    `CPF/CNPJ: ${contract.cliente.cpfCnpj}`,
-    `Telefone: ${contract.cliente.telefone}`,
-    `Email: ${contract.cliente.email}`,
-  ].join('\n');
-
-  // Dados para copiar - Integrador
-  const integradorCopyData = [
-    `Nome: ${contract.integrador}`,
-    `CNPJ: ${contract.integradorCnpj}`,
-    `Telefone: ${contract.integradorTelefone}`,
-    `Email: ${contract.integradorEmail}`,
-  ].join('\n');
-
   // Parcelas selecionadas para o modal de boleto
   const parcelasParaBoleto = contract.parcelas.filter(p => selectedParcelas.has(p.numero));
 
@@ -442,7 +502,7 @@ const ContractDetailPage = () => {
     position: 'sticky',
     top: 0,
     height: 'fit-content',
-    width: isSidebarOpen ? '300px' : '48px',
+    width: isSidebarOpen ? '316px' : '48px',
     backgroundColor: 'var(--color-bg)',
     borderRight: '1px solid var(--color-border)',
     display: 'flex',
@@ -622,21 +682,21 @@ const ContractDetailPage = () => {
               <InfoItem label="Taxa" value={`${contract.taxaJuros.toFixed(2)}% a.m.`} />
             </SidebarCard>
 
-            {/* Dados do Cliente - com botao de copiar */}
-            <SidebarCard title="Cliente" copyData={clienteCopyData}>
-              <InfoItem label="Nome" value={contract.cliente.nome} />
-              <InfoItem label="CPF/CNPJ" value={contract.cliente.cpfCnpj} mono />
-              <InfoItem label="Telefone" value={contract.cliente.telefone} mono />
-              <InfoItem label="Email" value={contract.cliente.email} />
+            {/* Dados do Cliente */}
+            <SidebarCard title="Cliente">
+              <InfoItem label="Nome" value={contract.cliente.nome} copyable />
+              <InfoItem label="CPF/CNPJ" value={contract.cliente.cpfCnpj} mono copyable />
+              <InfoItem label="Telefone" value={contract.cliente.telefone} mono copyable />
+              <InfoItem label="Email" value={contract.cliente.email} copyable />
               <InfoItem label="Cidade" value={`${contract.cliente.endereco.cidade}/${contract.cliente.endereco.uf}`} />
             </SidebarCard>
 
-            {/* Integrador - com botao de copiar */}
-            <SidebarCard title="Integrador" copyData={integradorCopyData}>
-              <InfoItem label="Nome" value={contract.integrador} />
-              <InfoItem label="CNPJ" value={contract.integradorCnpj} mono />
-              <InfoItem label="Telefone" value={contract.integradorTelefone} mono />
-              <InfoItem label="Email" value={contract.integradorEmail} />
+            {/* Integrador */}
+            <SidebarCard title="Integrador">
+              <InfoItem label="Nome" value={contract.integrador} copyable />
+              <InfoItem label="CNPJ" value={contract.integradorCnpj} mono copyable />
+              <InfoItem label="Telefone" value={contract.integradorTelefone} mono copyable />
+              <InfoItem label="Email" value={contract.integradorEmail} copyable />
             </SidebarCard>
           </div>
         </aside>
@@ -666,135 +726,206 @@ const ContractDetailPage = () => {
             </div>
           </header>
 
-          {/* Parcelas Table */}
+          {/* Tabs + Content */}
           <div style={tableContainerStyle}>
-            <div style={tableWrapperStyle}>
-              <div style={tableHeaderStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                  <h2 style={{ fontSize: 'var(--text-sm)', fontWeight: 600, margin: 0, color: 'var(--color-text-primary)' }}>
-                    Parcelas do Contrato
-                  </h2>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                    {parcelasEmAtraso.length} em atraso, {parcelasAVencer.length} a vencer
+            {/* Tab bar + Actions */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 'var(--spacing-md)',
+            }}>
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: '0' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('parcelas')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: activeTab === 'parcelas' ? 600 : 400,
+                    color: activeTab === 'parcelas' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: `2px solid ${activeTab === 'parcelas' ? 'var(--color-primary)' : 'transparent'}`,
+                    cursor: 'pointer',
+                    transition: 'all 150ms ease',
+                  }}
+                >
+                  Parcelas
+                  <span style={{
+                    marginLeft: '0.375rem',
+                    fontSize: 'var(--text-xs)',
+                    color: activeTab === 'parcelas' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  }}>
+                    {contract.parcelas.length}
                   </span>
-                </div>
-                <div style={actionsStyle}>
-                  {/* Botao Gerar Boleto */}
-                  {selectedParcelas.size > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleGerarBoleto}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.375rem',
-                        padding: '0.375rem 0.75rem',
-                        fontSize: 'var(--text-xs)',
-                        fontWeight: 500,
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 'var(--radius-md)',
-                        cursor: 'pointer',
-                      }}
-                      title="Gerar boleto para parcelas selecionadas"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <line x1="3" y1="9" x2="21" y2="9" />
-                        <line x1="9" y1="21" x2="9" y2="9" />
-                      </svg>
-                      Gerar Boleto ({selectedParcelas.size})
-                    </button>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('timeline')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: activeTab === 'timeline' ? 600 : 400,
+                    color: activeTab === 'timeline' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: `2px solid ${activeTab === 'timeline' ? 'var(--color-primary)' : 'transparent'}`,
+                    cursor: 'pointer',
+                    transition: 'all 150ms ease',
+                  }}
+                >
+                  Linha do Tempo
+                  {timelineEvents.length > 0 && (
+                    <span style={{
+                      marginLeft: '0.375rem',
+                      fontSize: 'var(--text-xs)',
+                      color: activeTab === 'timeline' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    }}>
+                      {timelineEvents.length}
+                    </span>
                   )}
+                </button>
+              </div>
 
-                  {/* Tag de Status - ao lado do botao anotacoes */}
-                  <span style={statusBadgeStyle}>
-                    {tratado ? (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                      </svg>
-                    )}
-                    {tratado ? 'Tratado' : 'Pendente'}
-                  </span>
-
-                  {/* Botao Anotacoes */}
+              {/* Actions */}
+              <div style={actionsStyle}>
+                {/* Botao Gerar Boleto */}
+                {activeTab === 'parcelas' && selectedParcelas.size > 0 && (
                   <button
                     type="button"
-                    style={anotacoesButtonStyle}
-                    onClick={() => setIsModalOpen(true)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-primary)';
-                      e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
-                      e.currentTarget.style.color = 'var(--color-primary)';
+                    onClick={handleGerarBoleto}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                      padding: '0.375rem 0.75rem',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 500,
+                      backgroundColor: 'var(--color-primary)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
                     }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-border)';
-                      e.currentTarget.style.backgroundColor = anotacoesCount > 0 ? 'var(--color-primary-subtle)' : 'var(--color-surface-elevated)';
-                      e.currentTarget.style.color = anotacoesCount > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)';
-                    }}
-                    title="Anotacoes do contrato"
+                    title="Gerar boleto para parcelas selecionadas"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <line x1="3" y1="9" x2="21" y2="9" />
+                      <line x1="9" y1="21" x2="9" y2="9" />
                     </svg>
-                    Anotacoes
-                    {anotacoesCount > 0 && (
-                      <span style={{
-                        backgroundColor: 'var(--color-primary)',
-                        color: 'white',
-                        padding: '0.125rem 0.375rem',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                      }}>
-                        {anotacoesCount}
-                      </span>
-                    )}
+                    Gerar Boleto ({selectedParcelas.size})
                   </button>
-                </div>
-              </div>
+                )}
 
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: 'var(--color-border-subtle)' }}>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)', width: '40px' }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedParcelas.size > 0 && selectedParcelas.size === contract.parcelas.filter(p => p.status !== 'paga').length}
-                          onChange={handleSelectAllParcelas}
-                          style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
-                          title="Selecionar todas"
-                        />
-                      </th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>#</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Vencimento</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Pagamento</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Original</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Atualizado</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }} title="Valor minimo com desconto aplicado">Limite Desconto</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Status</th>
-                      <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Atraso</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedParcelas.map((parcela) => (
-                      <ParcelaRow
-                        key={parcela.numero}
-                        parcela={parcela}
-                        isSelected={selectedParcelas.has(parcela.numero)}
-                        onToggleSelect={handleToggleParcela}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+                {/* Tag de Status */}
+                <span style={statusBadgeStyle}>
+                  {tratado ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                    </svg>
+                  )}
+                  {tratado ? 'Tratado' : 'Pendente'}
+                </span>
+
+                {/* Botao Anotacoes */}
+                <button
+                  type="button"
+                  style={anotacoesButtonStyle}
+                  onClick={() => setIsModalOpen(true)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-primary)';
+                    e.currentTarget.style.backgroundColor = 'var(--color-primary-subtle)';
+                    e.currentTarget.style.color = 'var(--color-primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                    e.currentTarget.style.backgroundColor = anotacoesCount > 0 ? 'var(--color-primary-subtle)' : 'var(--color-surface-elevated)';
+                    e.currentTarget.style.color = anotacoesCount > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)';
+                  }}
+                  title="Anotacoes do contrato"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Anotacoes
+                  {anotacoesCount > 0 && (
+                    <span style={{
+                      backgroundColor: 'var(--color-primary)',
+                      color: 'white',
+                      padding: '0.125rem 0.375rem',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                    }}>
+                      {anotacoesCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
+
+            {/* Tab Content */}
+            {activeTab === 'parcelas' ? (
+              <div style={tableWrapperStyle}>
+                <div style={tableHeaderStyle}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                    <h2 style={{ fontSize: 'var(--text-sm)', fontWeight: 600, margin: 0, color: 'var(--color-text-primary)' }}>
+                      Parcelas do Contrato
+                    </h2>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                      {parcelasEmAtraso.length} em atraso, {parcelasAVencer.length} a vencer
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: 'var(--color-border-subtle)' }}>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)', width: '40px' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedParcelas.size > 0 && selectedParcelas.size === contract.parcelas.filter(p => p.status !== 'paga').length}
+                            onChange={handleSelectAllParcelas}
+                            style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                            title="Selecionar todas"
+                          />
+                        </th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>#</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Vencimento</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Pagamento</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Original</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Atualizado</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }} title="Valor minimo com desconto aplicado">Limite Desconto</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Status</th>
+                        <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Atraso</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedParcelas.map((parcela) => (
+                        <ParcelaRow
+                          key={parcela.numero}
+                          parcela={parcela}
+                          isSelected={selectedParcelas.has(parcela.numero)}
+                          onToggleSelect={handleToggleParcela}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div style={tableWrapperStyle}>
+                <Timeline events={timelineEvents} isLoading={isTimelineLoading} onEventClick={setSelectedTimelineEvent} />
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -815,6 +946,13 @@ const ContractDetailPage = () => {
         onClose={() => setIsBoletoModalOpen(false)}
         parcelas={parcelasParaBoleto}
         onConfirm={handleConfirmBoleto}
+      />
+
+      {/* Drawer de Detalhes do Evento */}
+      <TimelineEventDrawer
+        event={selectedTimelineEvent}
+        isOpen={selectedTimelineEvent !== null}
+        onClose={() => setSelectedTimelineEvent(null)}
       />
     </div>
   );

@@ -16,7 +16,10 @@
       "Bash(dir:*)",
       "Bash(docker restart:*)",
       "Bash(pnpm --filter @cdc-fotus/types build:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(git remote add:*)",
+      "Bash(ssh:*)",
+      "Bash(git push:*)"
     ]
   }
 }

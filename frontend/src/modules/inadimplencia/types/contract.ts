@@ -117,10 +117,12 @@ export type CriticalityLevel = 'low' | 'medium' | 'high' | 'critical';
 // === LINHA DO TEMPO ===
 
 export type TimelineEventType =
-  | 'contrato_criado'
+  | 'inicio_inadimplencia'
+  | 'mudanca_faixa_atraso'
+  | 'mudanca_responsabilidade'
   | 'parcela_paga'
-  | 'parcela_vencida'
-  | 'anotacao'
+  | 'pagamento_parcial'
+  | 'acao_cobranca'
   | 'boleto_gerado';
 
 export interface TimelineEvent {
@@ -129,12 +131,17 @@ export interface TimelineEvent {
   date: string;
   title: string;
   description?: string;
-  author?: string;
+  author: string;
   metadata?: {
     parcelaNumero?: number;
     valor?: number;
     valorPago?: number;
     diasAtraso?: number;
+    faixaAnterior?: number;
+    faixaAtual?: number;
+    responsavelAnterior?: string;
+    responsavelAtual?: string;
     tipoContato?: string;
+    resultadoContato?: string;
   };
 }
