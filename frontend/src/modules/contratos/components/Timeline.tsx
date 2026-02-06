@@ -110,7 +110,7 @@ function formatEventDate(dateStr: string): { day: string; monthYear: string } {
 
 // === COMPONENTE DE EVENTO ===
 
-const TimelineItem = ({ event, isFirst, isLast, onClick }: { event: TimelineEvent; isFirst: boolean; isLast: boolean; onClick?: (event: TimelineEvent) => void }) => {
+const TimelineItem = ({ event, isLast, onClick }: { event: TimelineEvent; isLast: boolean; onClick?: (event: TimelineEvent) => void }) => {
   const config = eventConfigs[event.type];
   const { day, monthYear } = formatEventDate(event.date);
 
@@ -329,7 +329,6 @@ const Timeline = ({ events, isLoading, onEventClick }: TimelineProps) => {
         <TimelineItem
           key={event.id}
           event={event}
-          isFirst={index === 0}
           isLast={index === events.length - 1}
           onClick={onEventClick}
         />

@@ -1,4 +1,4 @@
-import type { Contract, ContractDetail, Cliente, Parcela, ParcelaStatus, InadimplenciaMetrics, Anotacao, TimelineEvent, TimelineEventType } from '../types/contract';
+import type { Contract, ContractDetail, Cliente, Parcela, ParcelaStatus, InadimplenciaMetrics, Anotacao, TimelineEvent } from '../types/contract';
 import { generateDueDateFromDaysOverdue } from '../../../lib/dates';
 
 // === DADOS DE MOCK ===
